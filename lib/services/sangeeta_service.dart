@@ -116,7 +116,7 @@ class SangeetaService extends ChangeNotifier {
     await _speech.listen(
       onResult: _onResult,
       listenOptions: SpeechListenOptions(
-        partialResults: false;
+        partialResults: false,
         cancelOnError: false,
         pauseFor: const Duration(seconds: 2),
         listenFor: const Duration(seconds: 12),

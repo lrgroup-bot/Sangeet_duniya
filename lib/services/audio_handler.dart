@@ -156,14 +156,14 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> setShuffleMode(AudioServiceShuffleMode mode) async {
-    _shuffleMode = mode;
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
+    _shuffleMode = shuffleMode;
     _broadcastState(_player.playbackEvent);
   }
 
   @override
-  Future<void> setRepeatMode(AudioServiceRepeatMode mode) async {
-    _repeatMode = mode;
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+    _repeatMode = repeatMode;
     _broadcastState(_player.playbackEvent);
   }
 
