@@ -6,9 +6,12 @@ concurrency:
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, tailscale-admin ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -71,3 +74,18 @@ jobs:
         with:
           name: lrs-sangeet-duniya-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Prepare GitHub Release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/tailscale-admin'
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/tailscale-admin'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: "v1.0.0-alpha.${{ github.run_number }}"
+          name: "LRS Sangeet_Duniya Alpha v1.0.0.${{ github.run_number }}"
+          prerelease: true
+          generate_release_notes: true
+          files: "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
