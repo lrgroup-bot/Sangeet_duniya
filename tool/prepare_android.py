@@ -29,6 +29,7 @@ permissions = [
     '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />',
     '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />',
     '    <uses-permission android:name="android.permission.RECORD_AUDIO" />',
+    '    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />',
 ]
 for permission in permissions:
     permission_name = permission.split('android:name="')[1].split('"')[0]
