@@ -80,14 +80,14 @@ jobs:
       - name: Prepare GitHub Release APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/tailscale-admin'
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "LRS-Sangeet-Duniya-v1.0.0.apk"
 
       - name: Publish GitHub Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/tailscale-admin'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: "v1.0.0-alpha.${{ github.run_number }}"
-          name: "LRS Sangeet_Duniya Alpha v1.0.0.${{ github.run_number }}"
-          prerelease: true
+          tag_name: "v1.0.0"
+          name: "LR's Sangeet_Duniya v1.0.0"
+          prerelease: false
           generate_release_notes: true
           files: "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
