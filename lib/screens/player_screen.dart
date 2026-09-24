@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../models/equalizer_profile.dart';
 import '../models/song.dart';
+import '../models/avatar_outfit.dart';
 import '../services/audio_cleanup_service.dart';
 import '../services/avatar_profile_service.dart';
 import '../services/download_service.dart';
@@ -147,11 +148,79 @@ class PlayerScreen extends StatelessWidget {
                     ),
                     _PlayerAction(icon: Icons.auto_fix_high_rounded, label: 'Clean Audio', onTap: () => _clean(context, song)),
                     _PlayerAction(icon: Icons.auto_awesome_rounded, label: 'Dance', onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DanceModeScreen(category: category)))),
+                    _PlayerAction(
+                      icon: Icons.checkroom_rounded,
+                      label: 'Dress for song',
+                      onTap: () => _chooseOutfit(context, song, item.id),
+                    ),
                   ],
                 ),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _chooseOutfit(
+    BuildContext context,
+    Song? song,
+    String songId,
+  ) async {
+    if (song == null) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFF11100E),
+      builder: (sheetContext) => SafeArea(
+        child: ListenableBuilder(
+          listenable: avatarProfileService,
+          builder: (context, _) => Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Choose Sangeeta outfit for this song',
+                  style: TextStyle(
+                    color: AppTheme.gold2,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...AvatarOutfit.values.map(
+                  (outfit) => RadioListTile<AvatarOutfit>(
+                    value: outfit,
+                    groupValue: avatarProfileService.savedSongOutfit(songId) ??
+                        avatarProfileService.outfitForSong(song),
+                    onChanged: (value) async {
+                      if (value == null) return;
+                      await avatarProfileService.setSongOutfit(songId, value);
+                      if (context.mounted) Navigator.of(sheetContext).pop();
+                    },
+                    title: Text(outfit.label),
+                    secondary: const Icon(
+                      Icons.checkroom_rounded,
+                      color: AppTheme.gold,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await avatarProfileService.clearSongOutfit(songId);
+                    await avatarProfileService.setOutfit(
+                      avatarProfileService.outfitForSong(song),
+                    );
+                    if (context.mounted) Navigator.of(sheetContext).pop();
+                  },
+                  child: const Text('Use automatic mood / default'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
