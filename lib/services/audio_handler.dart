@@ -9,6 +9,11 @@ import '../models/song.dart';
 class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   MusicAudioHandler() {
     _player.playbackEventStream.listen(_broadcastState);
+    _player.processingStateStream.listen((state) {
+      if (state == ProcessingState.completed) {
+        unawaited(skipToNext());
+      }
+    });
   }
 
   final AudioPlayer _player = AudioPlayer();
@@ -29,26 +34,22 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       title: song.title,
       artist: song.artist,
       artUri: Uri.tryParse(song.artworkUrl),
-      duration: await _safeDuration(song.streamUrl),
     );
 
     mediaItem.add(item);
-    await _player.setAudioSource(
+
+    final duration = await _player.setAudioSource(
       AudioSource.uri(
         Uri.parse(song.streamUrl),
         tag: item,
       ),
     );
-    await _player.play();
-  }
 
-  Future<Duration?> _safeDuration(String url) async {
-    try {
-      final duration = await _player.setUrl(url);
-      return duration;
-    } catch (_) {
-      return null;
+    if (duration != null) {
+      mediaItem.add(item.copyWith(duration: duration));
     }
+
+    await _player.play();
   }
 
   @override
@@ -79,24 +80,25 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   void _broadcastState(PlaybackEvent event) {
-    final processingState = {
-      ProcessingState.idle: AudioProcessingState.idle,
-      ProcessingState.loading: AudioProcessingState.loading,
-      ProcessingState.buffering: AudioProcessingState.buffering,
-      ProcessingState.ready: AudioProcessingState.ready,
-      ProcessingState.completed: AudioProcessingState.completed,
-    }[_player.processingState]!;
+    final processingState = switch (_player.processingState) {
+      ProcessingState.idle => AudioProcessingState.idle,
+      ProcessingState.loading => AudioProcessingState.loading,
+      ProcessingState.buffering => AudioProcessingState.buffering,
+      ProcessingState.ready => AudioProcessingState.ready,
+      ProcessingState.completed => AudioProcessingState.completed,
+    };
+
+    final controls = <MediaControl>[
+      MediaControl.skipToPrevious,
+      if (_player.playing) MediaControl.pause else MediaControl.play,
+      MediaControl.skipToNext,
+      MediaControl.stop,
+    ];
 
     playbackState.add(
       playbackState.value.copyWith(
-        controls: const [
-          MediaControl.skipToPrevious,
-          MediaControl.play,
-          MediaControl.pause,
-          MediaControl.skipToNext,
-          MediaControl.stop,
-        ],
-        androidCompactActionIndices: const [1, 2, 3],
+        controls: controls,
+        androidCompactActionIndices: const [0, 1, 2],
         processingState: processingState,
         playing: _player.playing,
         updatePosition: _player.position,
@@ -105,20 +107,9 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
         queueIndex: _currentIndex,
       ),
     );
-
-    if (_player.currentIndex != null) {
-      _currentIndex = _player.currentIndex!;
-    }
   }
 
-  @override
-  Future<void> onTaskRemoved() async {
-    await stop();
-  }
-
-  @override
-  Future<void> close() async {
+  Future<void> dispose() async {
     await _player.dispose();
-    await super.stop();
   }
 }
