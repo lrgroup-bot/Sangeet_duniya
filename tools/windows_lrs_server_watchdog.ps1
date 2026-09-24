@@ -268,7 +268,7 @@ function Install-Watchdog {
         throw "Cannot install watchdog: $serverPath does not exist."
     }
 
-    $scriptPath = $MyInvocation.MyCommand.Path
+    $scriptPath = $script:PSCommandPath
     $psArgs = '-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}" -Mode Run -RepoRoot "{1}" -Port {2} -IntervalSeconds {3}' -f $scriptPath, $root, $Port, $IntervalSeconds
     if ($RepairTailscaleService) { $psArgs += ' -RepairTailscaleService' }
 
