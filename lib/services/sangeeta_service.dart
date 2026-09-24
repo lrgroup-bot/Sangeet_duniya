@@ -40,7 +40,6 @@ class SangeetaService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     final savedPersonality = prefs.getString(_personalityKey);
-    final savedLanguage = prefs.getString(_languageKey);
 
     if (savedPersonality != null) {
       personality = SangeetaPersonality.values.firstWhere(
