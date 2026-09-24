@@ -48,8 +48,6 @@ class DancingSangeeta extends StatelessWidget {
               outfit: avatarProfileService.outfit,
               pose: SangeetaPose.dance,
               size: compact ? 150 : 260,
-              riveUrl: avatarProfileService.riveUrl,
-              stateMachine: avatarProfileService.riveStateMachine,
             ),
             if (!compact) ...[
               const SizedBox(height: 10),
