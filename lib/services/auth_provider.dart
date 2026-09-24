@@ -106,10 +106,13 @@ class AuthProvider extends ChangeNotifier {
     String phoneNumber = '',
   }) async {
     if (!isOwner) return null;
-    return LicenseService.instance.generateToken(
+    final token = LicenseService.instance.generateToken(
       plan,
       phoneNumber: phoneNumber,
     );
+    await LicenseService.instance.rememberToken(token);
+    await localLanService.syncTokensToRemote();
+    return token;
   }
 
   Future<void> signOut() async {
