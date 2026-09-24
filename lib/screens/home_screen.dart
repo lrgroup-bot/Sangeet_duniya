@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/demo_songs.dart';
+import '../models/license_plan.dart';
 import '../main.dart';
 import '../models/song.dart';
 import '../services/avatar_profile_service.dart';
