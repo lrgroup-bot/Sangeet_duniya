@@ -393,6 +393,521 @@ class LocalLanService extends ChangeNotifier {
     }
   }
 
+  Future<bool> requestAccess({
+    required String name,
+    required String phoneNumber,
+  }) async {
+    final cleanName = name.trim();
+    final cleanPhone = phoneNumber.trim();
+    if (cleanName.length < 2 ||
+        !RegExp(r'^[6-9]\d{9}    required String adminLink,
+    required String name,
+    required String phoneNumber,
+    required String token,
+  }) async {
+    final parsed = _parseLink(adminLink);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final registerUri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/register'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .post(
+            registerUri,
+            headers: const <String, String>{
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(<String, String>{
+              'name': name.trim(),
+              'phone': phoneNumber.trim(),
+              'token': token.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode != 200) return false;
+      final body = jsonDecode(response.body);
+      if (body is! Map<String, dynamic> || body['ok'] != true) return false;
+
+      _savedAdminLink = adminLink.trim();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_savedLinkKey, _savedAdminLink);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> syncFromAdmin() async {
+    final target =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : _savedAdminLink;
+    final parsed = _parseLink(target);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final usersUri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/users'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .get(usersUri)
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic> || decoded['ok'] != true) {
+        return false;
+      }
+
+      final rawUsers = decoded['users'];
+      if (rawUsers is! List) return false;
+
+      final users = rawUsers
+          .whereType<Map<String, dynamic>>()
+          .map((json) {
+            try {
+              return RegisteredUser.fromJson(json);
+            } catch (_) {
+              return null;
+            }
+          })
+          .whereType<RegisteredUser>()
+          .toList();
+
+      await userRegistry.replaceUsers(users);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> syncTokensToRemote() async {
+    if (_remoteAdminLink.isEmpty) return false;
+
+    final parsed = _parseLink(_remoteAdminLink);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final records = await LicenseService.instance.activationRecordsForSync();
+    final tokens = await LicenseService.instance.issuedTokens();
+
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/tokens'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const <String, String>{
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(<String, dynamic>{
+              'activationTokens': records,
+              'tokens': tokens,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode != 200) return false;
+      final body = jsonDecode(response.body);
+      return body is Map<String, dynamic> && body['ok'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> checkRemoteAdmin() async {
+    if (_remoteAdminLink.isEmpty) return false;
+    final parsed = _parseLink(_remoteAdminLink);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/health'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _handleRequest(HttpRequest request) async {
+    try {
+      if (request.method == 'OPTIONS') {
+        _respond(
+          request,
+          204,
+          null,
+          headers: <String, String>{
+            'access-control-allow-origin': '*',
+            'access-control-allow-methods': 'GET,POST,OPTIONS',
+            'access-control-allow-headers': 'content-type',
+          },
+        );
+        return;
+      }
+
+      if (request.uri.path == '/health') {
+        _respond(request, 200, <String, dynamic>{
+          'ok': true,
+          'app': "LR's Sangeet_Duniya",
+          'localOnly': true,
+        });
+        return;
+      }
+
+      final key = request.uri.queryParameters['key'] ?? '';
+      if (key.isEmpty || !_constantTimeEquals(key, _accessKey)) {
+        _respond(request, 401, <String, dynamic>{
+          'ok': false,
+          'error': 'Admin connection key required.',
+        });
+        return;
+      }
+
+      switch (request.uri.path) {
+        case '/connect':
+          _respond(request, 200, <String, dynamic>{
+            'ok': true,
+            'message': "Connected to LR's Sangeet_Duniya admin phone.",
+          });
+          return;
+        case '/activate':
+          await _handleActivate(request);
+          return;
+        case '/register':
+          await _handleRegister(request);
+          return;
+        case '/users':
+          _respond(request, 200, <String, dynamic>{
+            'ok': true,
+            'users': userRegistry.users
+                .map(_userToNetwork)
+                .toList(growable: false),
+          });
+          return;
+        default:
+          _respond(request, 404, <String, dynamic>{
+            'ok': false,
+            'error': 'Not found',
+          });
+          return;
+      }
+    } catch (_) {
+      _respond(request, 500, <String, dynamic>{
+        'ok': false,
+        'error': 'Local admin service error.',
+      });
+    }
+  }
+
+  Future<void> _handleActivate(HttpRequest request) async {
+    if (request.method != 'POST') {
+      _respond(request, 405, <String, dynamic>{'ok': false, 'error': 'POST required.'});
+      return;
+    }
+
+    final bodyText = await utf8.decoder.bind(request).join();
+    final decoded = jsonDecode(bodyText);
+    if (decoded is! Map<String, dynamic>) {
+      _respond(request, 400, <String, dynamic>{
+        'ok': false,
+        'error': 'Invalid activation payload.',
+      });
+      return;
+    }
+
+    final name = decoded['name']?.toString().trim() ?? '';
+    final phone = decoded['phone']?.toString().trim() ?? '';
+    final token = decoded['token']?.toString().trim() ?? '';
+
+    if (name.isEmpty ||
+        !RegExp(r'^[6-9]\d{9}$').hasMatch(phone) ||
+        !RegExp(r'^\d{6}$').hasMatch(token)) {
+      _respond(request, 400, <String, dynamic>{
+        'ok': false,
+        'error': 'Name, 10-digit phone number and 6-digit token are required.',
+      });
+      return;
+    }
+
+    final record = await LicenseService.instance.consumeActivationToken(
+      token,
+      phoneNumber: phone,
+    );
+    if (record == null) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Invalid, expired, already-used, or phone-bound token.',
+      });
+      return;
+    }
+
+    await userRegistry.saveUser(
+      name: name,
+      phoneNumber: phone,
+      planCode: record.plan.name,
+      issuedAt: record.issuedAt,
+      expiresAt: record.expiresAt,
+      token: record.token,
+      activatedAt: record.activatedAt ?? DateTime.now().toUtc(),
+    );
+
+    _respond(request, 200, <String, dynamic>{
+      'ok': true,
+      'activation': record.toJson(),
+    });
+  }
+
+  Future<void> _handleRegister(HttpRequest request) async {
+    if (request.method != 'POST') {
+      _respond(request, 405, <String, dynamic>{
+        'ok': false,
+        'error': 'POST required.',
+      });
+      return;
+    }
+
+    final body = await utf8.decoder.bind(request).join();
+    final decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      _respond(request, 400, <String, dynamic>{
+        'ok': false,
+        'error': 'Invalid registration payload.',
+      });
+      return;
+    }
+
+    final name = decoded['name']?.toString().trim() ?? '';
+    final phone = decoded['phone']?.toString().trim() ?? '';
+    final token = decoded['token']?.toString().trim() ?? '';
+
+    if (name.isEmpty ||
+        !RegExp(r'^[6-9]\d{9}$').hasMatch(phone) ||
+        token.isEmpty) {
+      _respond(request, 400, <String, dynamic>{
+        'ok': false,
+        'error': 'Name, 10-digit phone number and token are required.',
+      });
+      return;
+    }
+
+    final info = LicenseService.instance.validateToken(token);
+    if (info == null) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Token is invalid or expired.',
+      });
+      return;
+    }
+
+    if (info.phoneNumber.isNotEmpty && info.phoneNumber != phone) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Token is bound to a different phone number.',
+      });
+      return;
+    }
+
+    await userRegistry.saveUser(
+      name: name,
+      phoneNumber: phone,
+      planCode: info.plan.name,
+      issuedAt: info.issuedAt,
+      expiresAt: info.expiresAt,
+      token: info.token,
+      activatedAt: DateTime.now().toUtc(),
+    );
+
+    _respond(request, 200, <String, dynamic>{
+      'ok': true,
+      'name': name,
+      'phone': phone,
+      'plan': info.plan.name,
+      'issuedAt': info.issuedAt.toIso8601String(),
+      'expiresAt': info.expiresAt?.toIso8601String(),
+    });
+  }
+
+  Map<String, dynamic> _userToNetwork(RegisteredUser user) {
+    return <String, dynamic>{
+      'id': user.id,
+      'name': user.name,
+      'phone': user.phoneNumber,
+      'plan': user.planCode,
+      'issued': user.issuedAt.toIso8601String(),
+      'activated': user.activatedAt.toIso8601String(),
+      'expires': user.expiresAt?.toIso8601String(),
+      'token': user.token,
+    };
+  }
+
+  void _respond(
+    HttpRequest request,
+    int statusCode,
+    Object? body, {
+    Map<String, String> headers = const <String, String>{},
+  }) {
+    request.response.statusCode = statusCode;
+    request.response.headers.contentType = ContentType.json;
+    request.response.headers.set('access-control-allow-origin', '*');
+    for (final entry in headers.entries) {
+      request.response.headers.set(entry.key, entry.value);
+    }
+    if (body != null) request.response.write(jsonEncode(body));
+    request.response.close();
+  }
+
+  Uri? _parseLink(String input) {
+    try {
+      var value = input.trim();
+      if (value.isEmpty) return null;
+      if (!value.contains('://')) value = 'http://$value';
+      return Uri.parse(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _appendEndpoint(String basePath, String endpoint) {
+    final trimmed = basePath.replaceFirst(RegExp(r'/+$'), '');
+    if (trimmed.isEmpty || trimmed == '/') return endpoint;
+    return trimmed + endpoint;
+  }
+
+  String _newAccessKey() {
+    final random = Random.secure();
+    const chars =
+        'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    return List.generate(
+      28,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
+  }
+
+  bool _constantTimeEquals(String a, String b) {
+    if (a.length != b.length) return false;
+    var value = 0;
+    for (var i = 0; i < a.length; i++) {
+      value |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return value == 0;
+  }
+}
+
+final localLanService = LocalLanService();
+).hasMatch(cleanPhone)) {
+      return false;
+    }
+
+    final localEndpoints = await _discoverAdminEndpoints();
+    for (final endpoint in localEndpoints) {
+      if (await _postAccessRequest(
+        endpoint,
+        key: endpoint.queryParameters['key'] ?? '',
+        name: cleanName,
+        phoneNumber: cleanPhone,
+      )) {
+        return true;
+      }
+    }
+
+    return _requestAccessAgainstRemotePc(
+      name: cleanName,
+      phoneNumber: cleanPhone,
+    );
+  }
+
+  Future<bool> _postAccessRequest(
+    Uri base, {
+    required String key,
+    required String name,
+    required String phoneNumber,
+  }) async {
+    if (key.isEmpty) return false;
+    final uri = base.replace(
+      path: _appendEndpoint(base.path, '/request-access'),
+      queryParameters: <String, String>{'key': key},
+    );
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const <String, String>{
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(<String, String>{
+              'name': name,
+              'phone': phoneNumber,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _requestAccessAgainstRemotePc({
+    required String name,
+    required String phoneNumber,
+  }) async {
+    final preferred =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : defaultRemotePcBase;
+    final parsed = _parseLink(preferred);
+    if (parsed == null) return false;
+    final base = parsed.replace(queryParameters: const <String, String>{});
+
+    try {
+      final keyUri = base.replace(
+        path: _appendEndpoint(base.path, '/public/user-key'),
+      );
+      final keyResponse =
+          await http.get(keyUri).timeout(const Duration(seconds: 5));
+      if (keyResponse.statusCode != 200) return false;
+
+      final body = jsonDecode(keyResponse.body);
+      if (body is! Map<String, dynamic> || body['ok'] != true) {
+        return false;
+      }
+
+      final key = body['key']?.toString() ?? '';
+      if (key.isEmpty) return false;
+
+      return _postAccessRequest(
+        base,
+        key: key,
+        name: name,
+        phoneNumber: phoneNumber,
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> registerUser({
     required String adminLink,
     required String name,
