@@ -1,11 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/auth_provider.dart';
+import '../services/avatar_profile_service.dart';
 import '../services/local_lan_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 
 class ActivationScreen extends StatefulWidget {
   const ActivationScreen({super.key});
@@ -17,440 +18,304 @@ class ActivationScreen extends StatefulWidget {
 class _ActivationScreenState extends State<ActivationScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _tokenController = TextEditingController();
 
-  Timer? _ownerTapTimer;
-  int _ownerTapCount = 0;
   bool _busy = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _ownerTapTimer?.cancel();
-    _nameController.dispose();
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  String _formatDateTime(DateTime value) {
-    final local = value.toLocal();
-    String two(int value) => value.toString().padLeft(2, '0');
-    return '${two(local.day)}/${two(local.month)}/${local.year} '
-        '${two(local.hour)}:${two(local.minute)}';
-  }
+  String? _message;
+  bool _success = false;
 
   bool get _validPhone =>
       RegExp(r'^[6-9]\d{9}$').hasMatch(_phoneController.text.trim());
 
-  Future<void> _continue() async {
-    FocusScope.of(context).unfocus();
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _tokenController.dispose();
+    super.dispose();
+  }
 
+  Future<void> _login() async {
+    FocusScope.of(context).unfocus();
     final name = _nameController.text.trim();
     final phone = _phoneController.text.trim();
+    final token = _tokenController.text.trim();
 
-    if (name.length < 2) {
-      setState(() => _error = 'Enter your full name.');
-      return;
-    }
-
-    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
-      setState(() => _error = 'Enter a valid 10-digit mobile number.');
+    if (!_validPhone) {
+      _showMessage('Enter a valid 10-digit mobile number.', false);
       return;
     }
 
     setState(() {
-      _error = null;
-      _busy = false;
+      _busy = true;
+      _message = null;
     });
 
-    final token = await _showTokenDialog();
-    if (!mounted || token == null) return;
-
-    setState(() => _busy = true);
-
-    final record = await localLanService.activateToken(
-      name: name,
-      phoneNumber: phone,
-      token: token,
-    );
-
-    if (!mounted) return;
-
-    if (record == null) {
-      setState(() {
-        _busy = false;
-        _error =
-            'Activation failed. Check the 6-digit token and make sure the admin device or configured PC server is reachable.';
-      });
+    if (phone == '9338633303' && token == '333000') {
+      final ok = await authProvider.loginWithCredentials(
+        name: name.isEmpty ? 'Owner' : name,
+        phoneNumber: phone,
+        tokenId: token,
+      );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (ok) return;
+      _showMessage('Admin login could not be completed.', false);
       return;
     }
 
-    final activated = await authProvider.activateFromRecord(
-      record,
-      phoneNumber: phone,
+    if (name.length < 2) {
+      setState(() => _busy = false);
+      _showMessage('Enter your full name before signing in.', false);
+      return;
+    }
+
+    if (!RegExp(r'^\d{6}$').hasMatch(token)) {
+      setState(() => _busy = false);
+      _showMessage(
+        'Enter your 6-digit token, or use Request Access first.',
+        false,
+      );
+      return;
+    }
+
+    final ok = await authProvider.loginWithCredentials(
       name: name,
+      phoneNumber: phone,
+      tokenId: token,
     );
 
     if (!mounted) return;
-
     setState(() => _busy = false);
 
-    if (!activated) {
-      setState(() => _error = 'Could not save the activation on this phone.');
+    if (!ok) {
+      _showMessage(
+        'Login failed. Check your name, phone number and 6-digit token.',
+        false,
+      );
+    }
+  }
+
+  Future<void> _requestAccess() async {
+    FocusScope.of(context).unfocus();
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (name.length < 2) {
+      _showMessage('Enter your full name.', false);
+      return;
+    }
+    if (!_validPhone) {
+      _showMessage('Enter a valid 10-digit mobile number.', false);
       return;
     }
 
-    await _showSuccessDialog(record);
-  }
-
-  Future<String?> _showTokenDialog() async {
-    final controller = TextEditingController();
-    String? error;
-    bool submitting = false;
-
-    final result = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> submit() async {
-              final value = controller.text.trim();
-              if (!RegExp(r'^\d{6}$').hasMatch(value)) {
-                setDialogState(
-                  () => error = 'Enter the 6-digit activation token.',
-                );
-                return;
-              }
-
-              setDialogState(() {
-                submitting = true;
-                error = null;
-              });
-
-              Navigator.of(dialogContext).pop(value);
-            }
-
-            return AlertDialog(
-              title: const Text('Activation Token'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Enter the 6-digit token shared with you.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: .72),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    maxLength: 6,
-                    style: const TextStyle(
-                      fontSize: 30,
-                      letterSpacing: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(6),
-                    ],
-                    decoration: InputDecoration(
-                      counterText: '',
-                      labelText: 'Activation Token',
-                      hintText: '000000',
-                      errorText: error,
-                    ),
-                    onSubmitted: (_) {
-                      if (!submitting) submit();
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: submitting
-                      ? null
-                      : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: submitting ? null : submit,
-                  child: submitting
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Activate'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    controller.dispose();
-    return result;
-  }
-
-  Future<void> _showSuccessDialog(dynamic record) async {
-    final expires = record.expiresAt as DateTime?;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.verified_rounded, color: AppTheme.gold),
-              SizedBox(width: 8),
-              Text('Activation Successful'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Welcome to LR's Sangeet_Duniya",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _InfoRow('Validity', record.plan.label),
-              _InfoRow('Activated', _formatDateTime(record.activatedAt)),
-              _InfoRow(
-                'Valid until',
-                expires == null ? 'Lifetime' : _formatDateTime(expires),
-              ),
-            ],
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Enter App'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _handleHiddenOwnerTap() {
-    _ownerTapCount += 1;
-    _ownerTapTimer?.cancel();
-    _ownerTapTimer = Timer(const Duration(seconds: 3), () {
-      _ownerTapCount = 0;
+    setState(() {
+      _busy = true;
+      _message = null;
     });
 
-    if (_ownerTapCount >= 7) {
-      _ownerTapCount = 0;
-      _showOwnerDialog();
+    final ok = await localLanService.requestAccess(
+      name: name,
+      phoneNumber: phone,
+    );
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (ok) {
+      _showMessage(
+        'Access request sent. Your name and phone are now waiting for admin verification.',
+        true,
+      );
+    } else {
+      _showMessage(
+        'Could not reach the administrator. Same-Wi-Fi discovery or the configured Tailscale PC path is required.',
+        false,
+      );
     }
   }
 
-  Future<void> _showOwnerDialog() async {
-    final controller = TextEditingController();
-    String? error;
-
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> unlock() async {
-              final ok = await authProvider.unlockOwnerMode(controller.text);
-              if (!mounted) return;
-
-              if (ok) {
-                Navigator.of(dialogContext).pop();
-              } else {
-                setDialogState(() => error = 'Incorrect owner PIN.');
-              }
-            }
-
-            return AlertDialog(
-              title: const Text('Owner Access'),
-              content: TextField(
-                controller: controller,
-                autofocus: true,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(6),
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Owner PIN',
-                  errorText: error,
-                ),
-                onSubmitted: (_) => unlock(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: unlock,
-                  child: const Text('Unlock'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    controller.dispose();
+  void _showMessage(String message, bool success) {
+    setState(() {
+      _message = message;
+      _success = success;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: _handleHiddenOwnerTap,
-                    onLongPress: _showOwnerDialog,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.gold.withValues(alpha: .08),
-                        border: Border.all(
-                          color: AppTheme.gold.withValues(alpha: .25),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF050505),
+              Color(0xFF171005),
+              Color(0xFF050505),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 28),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 40,
+                  ),
+                  child: Column(
+                    children: [
+                      _BrandHeader(),
+                      const SizedBox(height: 12),
+                      ListenableBuilder(
+                        listenable: avatarProfileService,
+                        builder: (context, _) => RiveAvatarStage(
+                          outfit: avatarProfileService.outfit,
+                          pose: SangeetaPose.listening,
+                          size: 190,
                         ),
                       ),
-                      child: const Icon(
-                        Icons.headphones_rounded,
-                        size: 66,
-                        color: AppTheme.gold,
+                      const SizedBox(height: 2),
+                      Text(
+                        'ONE LOGIN • ADMIN + USER',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: AppTheme.gold2,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.6,
+                            ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "LR's Sangeet_Duniya",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Enter your details to continue',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: .65),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Your name',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _nameController,
-                            textCapitalization: TextCapitalization.words,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter full name',
-                              prefixIcon: Icon(Icons.person_outline_rounded),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Mobile number',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _phoneController,
-                            keyboardType: TextInputType.phone,
-                            maxLength: 10,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(10),
-                            ],
-                            decoration: InputDecoration(
-                              hintText: '10-digit mobile number',
-                              prefixIcon: const Icon(Icons.phone_rounded),
-                              counterText: '',
-                              errorText: _phoneController.text.isEmpty ||
-                                      _validPhone
-                                  ? null
-                                  : 'Enter exactly 10 digits.',
-                            ),
-                            onChanged: (_) => setState(() {}),
-                          ),
-                          const SizedBox(height: 22),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: _busy ? null : _continue,
-                              icon: _busy
-                                  ? const SizedBox(
-                                      height: 18,
-                                      width: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.arrow_forward_rounded),
-                              label: Text(
-                                _busy ? 'Activating…' : 'Continue',
+                      const SizedBox(height: 6),
+                      Text(
+                        'Your access is verified from the phone and token you enter.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: .62),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      _GlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Sign in',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 6),
+                            Text(
+                              'Admin: phone + admin token. User: name + phone + generated token.',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: .58),
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            TextField(
+                              controller: _nameController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: const InputDecoration(
+                                labelText: 'Full name',
+                                hintText: 'Enter your name',
+                                prefixIcon: Icon(Icons.person_rounded),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(10),
+                              ],
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: 'Phone number',
+                                hintText: '10-digit mobile number',
+                                prefixIcon: const Icon(Icons.phone_rounded),
+                                counterText: '',
+                                errorText: _phoneController.text.isEmpty ||
+                                        _validPhone
+                                    ? null
+                                    : 'Enter exactly 10 digits.',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _tokenController,
+                              keyboardType: TextInputType.number,
+                              maxLength: 6,
+                              obscureText: true,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(6),
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Token ID',
+                                hintText: '6-digit token',
+                                prefixIcon: Icon(Icons.vpn_key_rounded),
+                                counterText: '',
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: _busy ? null : _login,
+                                icon: _busy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.login_rounded),
+                                label: Text(_busy ? 'Checking…' : 'Continue'),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _busy ? null : _requestAccess,
+                                icon: const Icon(
+                                  Icons.mark_email_unread_rounded,
+                                ),
+                                label: const Text('Request Access'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      if (_message != null) ...[
+                        const SizedBox(height: 12),
+                        _MessageBanner(
+                          message: _message!,
+                          success: _success,
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      Text(
+                        'Admin verification keeps the customer name and phone bound to the generated token.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: .45),
+                          fontSize: 11,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      _error!,
-                      style: const TextStyle(color: Colors.redAccent),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  Text(
-                    'An activation token from the administrator is required.',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: .55),
-                      fontSize: 12,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -458,33 +323,137 @@ class _ActivationScreenState extends State<ActivationScreen> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow(this.label, this.value);
+class _BrandHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          height: 56,
+          width: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFF1A8), AppTheme.gold, Color(0xFF8B5200)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.gold.withValues(alpha: .22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.headphones_rounded,
+            color: Colors.black,
+            size: 30,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "LR's",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.gold2,
+              ),
+            ),
+            Text(
+              'SANGEET_DIUNYA',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .8,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
-  final String label;
-  final String value;
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({required this.child});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xB8111111),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.gold.withValues(alpha: .20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .38),
+            blurRadius: 36,
+            spreadRadius: 4,
+          ),
+          BoxShadow(
+            color: AppTheme.gold.withValues(alpha: .07),
+            blurRadius: 26,
+            spreadRadius: -5,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({
+    required this.message,
+    required this.success,
+  });
+
+  final String message;
+  final bool success;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = success ? Icons.check_circle_rounded : Icons.info_rounded;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: success
+            ? const Color(0x3326C281)
+            : const Color(0x33FFB03A),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: success
+              ? const Color(0x6649D39B)
+              : AppTheme.gold.withValues(alpha: .35),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: .60),
-                fontSize: 12,
-              ),
-            ),
+          Icon(
+            icon,
+            color: success ? const Color(0xFF77E4B8) : AppTheme.gold2,
           ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              message,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                height: 1.35,
+              ),
             ),
           ),
         ],
