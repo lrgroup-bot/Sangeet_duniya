@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 
 import 'screens/splash_screen.dart';
 import 'services/audio_handler.dart';
+import 'services/library_store.dart';
 import 'theme/app_theme.dart';
 
 late final MusicAudioHandler audioHandler;
@@ -16,16 +15,7 @@ Future<void> main() async {
   try {
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
-  } catch (error, stackTrace) {
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stackTrace,
-        library: 'audio_session startup',
-        context: ErrorDescription('configuring the music audio session'),
-      ),
-    );
-  }
+  } catch (_) {}
 
   try {
     audioHandler = await AudioService.init(
@@ -33,8 +23,16 @@ Future<void> main() async {
       config: AudioServiceConfig(
         androidNotificationChannelId: 'com.lrs.sangeet_duniya.audio',
         androidNotificationChannelName: "LR's Sangeet_Duniya",
+        androidNotificationChannelDescription: 'Music playback controls',
+        androidNotificationIcon: 'drawable/ic_stat_sangeet',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: false,
+        androidResumeOnClick: true,
+        androidNotificationClickStartsActivity: true,
+        notificationColor: AppTheme.gold,
+        preloadArtwork: true,
+        artDownscaleWidth: 256,
+        artDownscaleHeight: 256,
       ),
     );
   } catch (error, stackTrace) {
@@ -43,12 +41,12 @@ Future<void> main() async {
         exception: error,
         stack: stackTrace,
         library: 'audio_service startup',
-        context: ErrorDescription('initializing background audio'),
       ),
     );
     audioHandler = MusicAudioHandler();
   }
 
+  await libraryStore.load();
   runApp(const SangeetDuniyaApp());
 }
 
