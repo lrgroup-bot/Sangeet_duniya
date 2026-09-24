@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../data/demo_songs.dart';
 import '../main.dart';
 import '../models/song.dart';
+import '../services/avatar_profile_service.dart';
 import '../services/library_store.dart';
 import '../services/music_catalog_service.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
 
@@ -28,9 +31,95 @@ class _HomeScreenState extends State<HomeScreen> {
             ]),
             actions: [IconButton(tooltip: 'Open player', onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen())), icon: const Icon(Icons.graphic_eq_rounded))],
           ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+              child: ListenableBuilder(
+                listenable: avatarProfileService,
+                builder: (context, _) => Container(
+                  height: 185,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF211607), Color(0xFF0B0906)],
+                    ),
+                    border: Border.all(color: Color(0x66FFC857)),
+                  ),
+                  child: Row(
+                    children: [
+                      RiveAvatarStage(
+                        outfit: avatarProfileService.outfit,
+                        pose: SangeetaPose.greeting,
+                        size: 165,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ହାଇ ଜାନ୍…',
+                              style: TextStyle(
+                                color: Color(0xFFFFC857),
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'ମୁଁ Sangeeta। ଗୀତ ଚଳାଇବି, ଖୋଜିବି ଏବଂ Auto EQ ଚୟନ କରିଦେବି।',
+                              style: TextStyle(fontSize: 13, height: 1.35),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Text('Quick moods', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: SizedBox.shrink(),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.zero,
+              child: SizedBox.shrink(),
+            ),
+          ),
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(20, 14, 20, 18),
+              child: SizedBox.shrink(),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.zero,
+              child: SizedBox.shrink(),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 14, 20, 18),
+              child: Card(child: Padding(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Sangeeta', style: TextStyle(color: Color(0xFFFFC857), fontSize: 15, fontWeight: FontWeight.w800)),
+                SizedBox(height: 6),
+                Text('Internet Music + Local Library', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                SizedBox(height: 8),
+                Text('Search, stream, save permitted tracks offline, and let Sangeeta choose Auto EQ on every new song.'),
+              ]))),
+            ),
+          ),
               child: Card(child: Padding(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Sangeeta', style: TextStyle(color: Color(0xFFFFC857), fontSize: 15, fontWeight: FontWeight.w800)),
                 SizedBox(height: 6),
