@@ -12,6 +12,7 @@ import '../widgets/sangeeta_logo.dart';
 import 'admin_dashboard_screen.dart';
 import 'license_admin_screen.dart';
 import 'equalizer_screen.dart';
+import 'sangeeta_preview_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -166,6 +167,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => const EqualizerScreen(),
+                  ),
+                ),
+              ),
+              const Divider(height: 30),
+              ListTile(
+                leading: const Icon(
+                  Icons.face_retouching_natural_rounded,
+                  color: AppTheme.gold,
+                ),
+                title: const Text('Avatar Character Preview'),
+                subtitle: const Text(
+                  'Check Sangeeta identity, outfits and animation states',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SangeetaPreviewScreen(),
                   ),
                 ),
               ),

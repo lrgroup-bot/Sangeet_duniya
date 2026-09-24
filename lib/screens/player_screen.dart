@@ -5,13 +5,15 @@ import '../main.dart';
 import '../models/equalizer_profile.dart';
 import '../models/song.dart';
 import '../services/audio_cleanup_service.dart';
+import '../services/avatar_profile_service.dart';
 import '../services/download_service.dart';
 import '../services/equalizer_profile_service.dart';
 import '../services/library_store.dart';
 import '../theme/app_theme.dart';
-import '../widgets/dancing_sangeeta.dart';
 import '../widgets/interactive_transport_controls.dart';
 import 'dance_mode_screen.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 import 'equalizer_screen.dart';
 
 class PlayerScreen extends StatelessWidget {
@@ -45,12 +47,35 @@ class PlayerScreen extends StatelessWidget {
 
             final category = item.extras?['category']?.toString() ?? 'Trending';
             final song = libraryStore.songById(item.id);
-            final showDancer = category.toLowerCase() == 'party' || category.toLowerCase() == 'romantic';
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
               children: [
-                if (showDancer) ...[DancingSangeeta(category: category, compact: true), const SizedBox(height: 14)],
+                ListenableBuilder(
+                  listenable: avatarProfileService,
+                  builder: (context, _) => StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, stateSnapshot) => Container(
+                      height: 170,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(28),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF211607), Color(0xFF0B0906)],
+                        ),
+                        border: Border.all(color: Color(0x55FFC857)),
+                      ),
+                      alignment: Alignment.bottomCenter,
+                      child: RiveAvatarStage(
+                        outfit: avatarProfileService.outfit,
+                        pose: (stateSnapshot.data?.playing ?? false)
+                            ? SangeetaPose.dance
+                            : SangeetaPose.sit,
+                        size: 150,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
                 AspectRatio(
                   aspectRatio: 1,
                   child: ClipRRect(

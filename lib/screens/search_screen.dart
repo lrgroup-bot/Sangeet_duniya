@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../data/demo_songs.dart';
 import '../main.dart';
 import '../models/song.dart';
+import '../services/avatar_profile_service.dart';
 import '../services/music_catalog_service.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
 
@@ -52,6 +55,35 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           ),
           const SizedBox(height: 14),
+          ListenableBuilder(
+            listenable: avatarProfileService,
+            builder: (context, _) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF211607), Color(0xFF0B0906)],
+                ),
+                border: Border.all(color: Color(0x44FFC857)),
+              ),
+              child: Row(
+                children: [
+                  RiveAvatarStage(
+                    outfit: avatarProfileService.outfit,
+                    pose: SangeetaPose.next,
+                    size: 76,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Sangeeta: ଗୀତ, artist କିମ୍ବା mood ଲେଖନ୍ତୁ।',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           if (_error != null) Text(_error!, style: const TextStyle(color: Colors.orangeAccent)),
           const SizedBox(height: 10),
           if (_loading) const Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator())),

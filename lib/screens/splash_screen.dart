@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../services/permission_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/sangeeta_logo.dart';
+import '../services/avatar_profile_service.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 import 'auth_gate.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -52,8 +54,15 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SangeetaLogo(size: 300, showTagline: false),
-              const SizedBox(height: 10),
+              ListenableBuilder(
+                listenable: avatarProfileService,
+                builder: (context, _) => RiveAvatarStage(
+                  outfit: avatarProfileService.outfit,
+                  pose: SangeetaPose.greeting,
+                  size: 240,
+                ),
+              ),
+              const SizedBox(height: 6),
               Text(
                 "LR's Sangeet_Duniya",
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(

@@ -114,3 +114,15 @@ stat_dir.mkdir(parents=True, exist_ok=True)
 )
 rendered.unlink(missing_ok=True)
 print("AndroidManifest.xml, launcher icon, and media notification icon prepared.")
+
+# permission_handler_android currently requires Android API 37 for compilation.
+# Keep targetSdk behavior unchanged; compileSdk only controls the API surface available at build time.
+app_gradle = ROOT / "android/app/build.gradle.kts"
+if app_gradle.exists():
+    gradle = app_gradle.read_text(encoding="utf-8")
+    gradle = gradle.replace(
+        "compileSdk = flutter.compileSdkVersion",
+        "compileSdk = 37",
+        1,
+    )
+    app_gradle.write_text(gradle, encoding="utf-8")
