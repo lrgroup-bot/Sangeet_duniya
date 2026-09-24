@@ -11,14 +11,17 @@ class ActivationScreen extends StatefulWidget {
 }
 
 class _ActivationScreenState extends State<ActivationScreen> {
+  final nameController = TextEditingController();
   final tokenController = TextEditingController();
   final phoneController = TextEditingController();
   final pinController = TextEditingController();
+
   bool busy = false;
   String? error;
 
   @override
   void dispose() {
+    nameController.dispose();
     tokenController.dispose();
     phoneController.dispose();
     pinController.dispose();
@@ -27,6 +30,14 @@ class _ActivationScreenState extends State<ActivationScreen> {
 
   Future<void> activate() async {
     FocusScope.of(context).unfocus();
+    final name = nameController.text.trim();
+    final phone = phoneController.text.trim();
+
+    if (name.isEmpty || phone.length < 7) {
+      setState(() => error = 'Please enter your name and valid phone number.');
+      return;
+    }
+
     setState(() {
       busy = true;
       error = null;
@@ -34,21 +45,35 @@ class _ActivationScreenState extends State<ActivationScreen> {
 
     final ok = await authProvider.activateWithToken(
       tokenController.text,
-      phoneNumber: phoneController.text,
+      phoneNumber: phone,
     );
 
     if (!mounted) return;
     setState(() => busy = false);
-    if (!ok) {
+
+    if (!ok || authProvider.license == null) {
       setState(() => error = 'Invalid token, phone number, or expiry.');
+      return;
     }
+
+    final license = authProvider.license!;
+    await userRegistry.saveUser(
+      name: name,
+      phoneNumber: phone,
+      planCode: license.plan.name,
+      issuedAt: license.issuedAt,
+      expiresAt: license.expiresAt,
+      token: license.token,
+    );
   }
 
   Future<void> owner() async {
     FocusScope.of(context).unfocus();
     final ok = await authProvider.unlockOwnerMode(pinController.text);
     if (!mounted) return;
-    if (!ok) setState(() => error = 'Owner PIN is incorrect.');
+    if (!ok) {
+      setState(() => error = 'Owner PIN is incorrect.');
+    }
   }
 
   @override
@@ -70,12 +95,15 @@ class _ActivationScreenState extends State<ActivationScreen> {
                   const SizedBox(height: 12),
                   const Text(
                     "LR's Sangeet_Duniya",
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Private activation',
+                    'Free private activation',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .65),
                     ),
@@ -87,6 +115,22 @@ class _ActivationScreenState extends State<ActivationScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          const Text(
+                            'Your name',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: nameController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              hintText: 'Enter your name',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
                           const Text(
                             'Phone number',
                             style: TextStyle(
@@ -132,22 +176,11 @@ class _ActivationScreenState extends State<ActivationScreen> {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: AppTheme.gold.withValues(alpha: .10),
-                              border: Border.all(
-                                color: AppTheme.gold.withValues(alpha: .35),
-                              ),
-                            ),
-                            child: const Text(
-                              'Annual plan: ₹100 / year • Ultimate: Lifetime',
-                              style: TextStyle(
-                                color: AppTheme.gold2,
-                                fontWeight: FontWeight.w900,
-                              ),
+                          const Text(
+                            'Payment is disabled. There are no paid plans or payment gateways in the app. Validity is only an access period.',
+                            style: TextStyle(
+                              color: AppTheme.gold2,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -161,7 +194,8 @@ class _ActivationScreenState extends State<ActivationScreen> {
                       subtitle: const Text(
                         'Use on your administrator phone only',
                       ),
-                      childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+                      childrenPadding:
+                          const EdgeInsets.fromLTRB(18, 0, 18, 18),
                       children: [
                         TextField(
                           controller: pinController,
@@ -194,12 +228,12 @@ class _ActivationScreenState extends State<ActivationScreen> {
                   ],
                   const SizedBox(height: 18),
                   const Text(
-                    'Tokens carry their own validity: 7 days, 30 days, 365 days, or Ultimate.',
+                    'Access periods: 7 days, 30 days, 365 days, or Ultimate Lifetime.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Personal-use licensing only. This offline gate is not tamper-proof commercial DRM.',
+                    'This is a private offline activation system, not a paid subscription service.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12),
                   ),
