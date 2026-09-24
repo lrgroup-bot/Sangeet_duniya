@@ -59,7 +59,7 @@ class _SangeetaAvatarState extends State<SangeetaAvatar>
         final beat = math.sin(t * math.pi * 2);
         final breathe = math.sin(t * math.pi * 2) * .5 + .5;
         final isDance = widget.pose == SangeetaPose.dance;
-        final lift = isDance ? math.max(0, beat) * 7 : breathe * 1.5;
+        final lift = (isDance ? math.max(0, beat) * 7 : breathe * 1.5).toDouble();
         final sway = isDance ? beat * 5 : math.sin(t * math.pi * 2) * 1.25;
 
         return Transform.translate(
@@ -148,7 +148,6 @@ class _SangeetaAvatarPainter extends CustomPainter {
     final hipY = s * .76;
 
     final skinPaint = Paint()..color = skin;
-    final shadowPaint = Paint()..color = skinShadow;
 
     // Long, consistent adult proportions: large head, narrow waist and
     // balanced hips/legs. The same geometry is reused for every pose/outfit.
@@ -514,11 +513,9 @@ class _SangeetaAvatarPainter extends CustomPainter {
 extension on Color {
   Color darken([double amount = .18]) {
     final factor = (1 - amount).clamp(0.0, 1.0);
-    return Color.fromARGB(
-      alpha,
-      (red * factor).round(),
-      (green * factor).round(),
-      (blue * factor).round(),
-    );
+    final hsl = HSLColor.fromColor(this);
+    return hsl
+        .withLightness((hsl.lightness * factor).clamp(0.0, 1.0).toDouble())
+        .toColor();
   }
 }
