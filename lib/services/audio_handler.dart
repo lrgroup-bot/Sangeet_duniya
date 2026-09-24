@@ -5,42 +5,52 @@ import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../data/demo_songs.dart';
+import '../models/equalizer_profile.dart';
 import '../models/song.dart';
+import 'equalizer_profile_service.dart';
 import 'library_store.dart';
 
 class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   MusicAudioHandler() {
     _player.playbackEventStream.listen(_broadcastState);
     _player.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed) {
-        unawaited(skipToNext());
-      }
+      if (state == ProcessingState.completed) unawaited(skipToNext());
     });
   }
 
-  final AudioPlayer _player = AudioPlayer();
+  final AndroidEqualizer _equalizer = AndroidEqualizer();
+  final AndroidLoudnessEnhancer _loudness = AndroidLoudnessEnhancer();
+  late final AudioPlayer _player = AudioPlayer(
+    audioPipeline: AudioPipeline(
+      androidAudioEffects: <AndroidAudioEffect>[_equalizer, _loudness],
+    ),
+  );
+
+  final List<Song> _queue = <Song>[];
   int _currentIndex = 0;
 
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   bool get isPlaying => _player.playing;
 
-  Future<void> playSong(Song song) async {
-    final index = demoSongs.indexWhere((item) => item.id == song.id);
-    if (index >= 0) _currentIndex = index;
+  Future<void> playSong(Song song, {List<Song>? queue}) async {
+    if (queue != null && queue.isNotEmpty) {
+      _queue..clear()..addAll(queue);
+      final index = _queue.indexWhere((item) => item.id == song.id);
+      _currentIndex = index < 0 ? 0 : index;
+    } else if (_queue.isEmpty) {
+      _queue..clear()..addAll(demoSongs);
+      final index = _queue.indexWhere((item) => item.id == song.id);
+      _currentIndex = index < 0 ? 0 : index;
+    } else {
+      final index = _queue.indexWhere((item) => item.id == song.id);
+      if (index >= 0) _currentIndex = index;
+    }
 
-    final item = MediaItem(
-      id: song.id,
-      album: song.album,
-      title: song.title,
-      artist: song.artist,
-      artUri: Uri.tryParse(song.artworkUrl),
-      extras: <String, dynamic>{
-        'category': song.category,
-      },
-    );
-
+    await libraryStore.rememberSong(song);
+    final item = _mediaItem(song);
     mediaItem.add(item);
+    queue.add(_queue.map(_mediaItem).toList(growable: false));
     await _player.stop();
 
     final localPath = libraryStore.localPathFor(song.id);
@@ -49,39 +59,81 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
         : AudioSource.uri(Uri.parse(song.streamUrl), tag: item);
 
     final duration = await _player.setAudioSource(source);
-    if (duration != null) {
-      mediaItem.add(item.copyWith(duration: duration));
-    }
+    if (duration != null) mediaItem.add(item.copyWith(duration: duration));
 
+    await _applyRecommendedEq(song);
     await libraryStore.recordPlayed(song);
     await _player.play();
   }
 
-  @override
-  Future<void> play() => _player.play();
+  MediaItem _mediaItem(Song song) => MediaItem(
+        id: song.id,
+        album: song.album,
+        title: song.title,
+        artist: song.artist,
+        artUri: Uri.tryParse(song.artworkUrl),
+        extras: <String, dynamic>{
+          'category': song.category,
+          'source': song.source,
+          'sourcePageUrl': song.sourcePageUrl,
+          'quality': song.qualityLabel,
+          'downloadable': song.isDownloadable,
+        },
+      );
 
-  @override
-  Future<void> pause() => _player.pause();
-
-  @override
-  Future<void> stop() async {
-    await _player.stop();
-    await super.stop();
+  Future<void> _applyRecommendedEq(Song song) async {
+    final profile = equalizerProfileService.profileFor(song);
+    await applyEqualizer(profile);
   }
 
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> applyEqualizer(EqualizerProfile profile) async {
+    if (!Platform.isAndroid) return;
+    try {
+      final parameters = await _equalizer.parameters;
+      for (final band in parameters.bands) {
+        var nearestIndex = 0;
+        var nearestDistance = double.infinity;
+        for (var i = 0; i < EqualizerProfile.frequenciesHz.length; i++) {
+          final distance = (band.centerFrequency - EqualizerProfile.frequenciesHz[i]).abs();
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            nearestIndex = i;
+          }
+        }
+        final gain = profile.gainsDb[nearestIndex]
+            .clamp(parameters.minDecibels, parameters.maxDecibels)
+            .toDouble();
+        await band.setGain(gain);
+      }
+      await _equalizer.setEnabled(true);
+    } catch (_) {}
+  }
+
+  Future<void> setLoudnessBoost(bool enabled, {double gainDb = 2}) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _loudness.setTargetGain(gainDb.clamp(0, 6).toDouble());
+      await _loudness.setEnabled(enabled);
+    } catch (_) {}
+  }
+
+  @override Future<void> play() => _player.play();
+  @override Future<void> pause() => _player.pause();
+  @override Future<void> stop() async { await _player.stop(); await super.stop(); }
+  @override Future<void> seek(Duration position) => _player.seek(position);
 
   @override
   Future<void> skipToNext() async {
-    _currentIndex = (_currentIndex + 1) % demoSongs.length;
-    await playSong(demoSongs[_currentIndex]);
+    if (_queue.isEmpty) _queue.addAll(demoSongs);
+    _currentIndex = (_currentIndex + 1) % _queue.length;
+    await playSong(_queue[_currentIndex], queue: _queue);
   }
 
   @override
   Future<void> skipToPrevious() async {
-    _currentIndex = (_currentIndex - 1 + demoSongs.length) % demoSongs.length;
-    await playSong(demoSongs[_currentIndex]);
+    if (_queue.isEmpty) _queue.addAll(demoSongs);
+    _currentIndex = (_currentIndex - 1 + _queue.length) % _queue.length;
+    await playSong(_queue[_currentIndex], queue: _queue);
   }
 
   void _broadcastState(PlaybackEvent event) {
@@ -92,33 +144,23 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       ProcessingState.ready => AudioProcessingState.ready,
       ProcessingState.completed => AudioProcessingState.completed,
     };
-
     final controls = <MediaControl>[
       MediaControl.skipToPrevious,
       if (_player.playing) MediaControl.pause else MediaControl.play,
       MediaControl.skipToNext,
     ];
-
-    playbackState.add(
-      PlaybackState(
-        controls: controls,
-        androidCompactActionIndices: const [0, 1, 2],
-        processingState: processingState,
-        playing: _player.playing,
-        updatePosition: _player.position,
-        bufferedPosition: _player.bufferedPosition,
-        speed: _player.speed,
-        queueIndex: _currentIndex,
-      ),
-    );
+    playbackState.add(PlaybackState(
+      controls: controls,
+      androidCompactActionIndices: const [0, 1, 2],
+      processingState: processingState,
+      playing: _player.playing,
+      updatePosition: _player.position,
+      bufferedPosition: _player.bufferedPosition,
+      speed: _player.speed,
+      queueIndex: _currentIndex,
+    ));
   }
 
-  @override
-  Future<void> onTaskRemoved() async {
-    // Keep audio service alive when the app task is swiped/removed.
-  }
-
-  Future<void> dispose() async {
-    await _player.dispose();
-  }
+  @override Future<void> onTaskRemoved() async {}
+  Future<void> dispose() async { await _player.dispose(); }
 }
