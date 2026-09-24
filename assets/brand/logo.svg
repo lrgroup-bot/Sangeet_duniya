@@ -22,9 +22,6 @@
   <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
     <feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>
-  <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
-    <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".75"/>
-  </filter>
   <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
     <feGaussianBlur stdDeviation="4"/>
   </filter>
@@ -41,7 +38,7 @@
 
 <!-- 3D avatar body -->
 <path d="M214 926 C245 760 348 676 512 676 C676 676 780 764 812 926 Z"
-      fill="url(#dress)" stroke="url(#gold)" stroke-width="9" filter="url(#shadow)"/>
+      fill="url(#dress)" stroke="url(#gold)" stroke-width="9"/>
 <path d="M300 812 C372 744 438 721 512 721 C586 721 653 745 724 812"
       fill="none" stroke="#A66A18" stroke-width="11" opacity=".55"/>
 <path d="M350 865 C413 824 608 824 676 865" fill="none" stroke="#F2C55B" stroke-width="6" opacity=".55"/>
@@ -52,10 +49,10 @@
 <!-- hair back -->
 <path d="M322 404 C286 229 383 118 512 118 C641 118 738 231 702 411
          C688 502 633 597 560 630 L424 620 C354 584 336 497 322 404 Z"
-      fill="url(#hair)" stroke="#6B3B26" stroke-width="7" filter="url(#shadow)"/>
+      fill="url(#hair)" stroke="#6B3B26" stroke-width="7"/>
 
 <!-- face -->
-<ellipse cx="512" cy="392" rx="176" ry="213" fill="url(#skin)" stroke="#8C5444" stroke-width="5" filter="url(#shadow)"/>
+<ellipse cx="512" cy="392" rx="176" ry="213" fill="url(#skin)" stroke="#8C5444" stroke-width="5"/>
 
 <!-- hair crown -->
 <path d="M336 392 C306 240 390 126 512 126 C634 126 716 239 687 393
@@ -68,8 +65,8 @@
       fill="none" stroke="#060606" stroke-width="56"/>
 <path d="M324 364 C315 206 399 102 512 102 C625 102 710 205 700 364"
       fill="none" stroke="url(#gold)" stroke-width="11" filter="url(#glow)"/>
-<rect x="290" y="314" width="84" height="150" rx="34" fill="#090909" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
-<rect x="650" y="314" width="84" height="150" rx="34" fill="#090909" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
+<rect x="290" y="314" width="84" height="150" rx="34" fill="#090909" stroke="url(#gold)" stroke-width="10"/>
+<rect x="650" y="314" width="84" height="150" rx="34" fill="#090909" stroke="url(#gold)" stroke-width="10"/>
 <circle cx="332" cy="389" r="21" fill="#1C1208" stroke="#FFD76A" stroke-width="4"/>
 <circle cx="692" cy="389" r="21" fill="#1C1208" stroke="#FFD76A" stroke-width="4"/>
 <path d="M322 380 L342 380 L342 399 L322 399 Z" fill="#FFD76A" opacity=".85"/>
@@ -99,7 +96,7 @@
 </g>
 
 <!-- extruded 3D title -->
-<g font-family="Georgia,serif" font-weight="900" text-anchor="middle" filter="url(#shadow)">
+<g font-family="Georgia,serif" font-weight="900" text-anchor="middle">
   <text x="520" y="798" font-size="122" fill="#6A3A00" transform="translate(12 16)">LR’s</text>
   <text x="512" y="790" font-size="122" fill="url(#gold)" stroke="#FFF2B5" stroke-width="3">LR’s</text>
   <text x="520" y="894" font-size="70" fill="#5B3200" transform="translate(10 13)">Sangeet Duniya</text>
