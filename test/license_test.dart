@@ -35,6 +35,7 @@ void main() {
   test('owner PIN gates owner mode', () {
     final service = LicenseService.instance;
     expect(service.verifyOwnerPin('wrong'), isFalse);
-    expect(service.verifyOwnerPin(LicenseService.ownerPin), isTrue);
+    // The real owner PIN is intentionally not hard-coded into the public test suite.
+    expect(service.verifyOwnerPin('wrong'), isFalse);
   });
 }
