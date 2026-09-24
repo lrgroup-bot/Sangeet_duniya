@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/demo_songs.dart';
 import '../main.dart';
+import '../models/song.dart';
 import '../services/library_store.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
@@ -115,7 +116,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _songs({
     required String title,
-    required List songs,
+    required List<Song> songs,
   }) {
     if (songs.isEmpty) {
       return Card(
