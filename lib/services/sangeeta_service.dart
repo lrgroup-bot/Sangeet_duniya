@@ -24,7 +24,7 @@ class SangeetaService extends ChangeNotifier {
   bool _busySpeaking = false;
 
   bool isListening = false;
-  bool continuousWakeMode = true;
+  bool continuousWakeMode = false;
 
   /// Exposed so the avatar can switch to a speaking animation while TTS is active.
   bool get isSpeaking => _busySpeaking;
@@ -116,18 +116,17 @@ class SangeetaService extends ChangeNotifier {
     await _speech.listen(
       onResult: _onResult,
       listenOptions: SpeechListenOptions(
-        partialResults: true,
+        partialResults: false;
         cancelOnError: false,
         pauseFor: const Duration(seconds: 2),
-        listenFor: const Duration(seconds: 30),
+        listenFor: const Duration(seconds: 12),
         localeId: languageCode,
-        enableHapticFeedback: true,
+        enableHapticFeedback: false,
       ),
     );
   }
 
   Future<void> stopListening() async {
-    continuousWakeMode = false;
     await _speech.stop();
     isListening = false;
     notifyListeners();
@@ -326,10 +325,6 @@ class SangeetaService extends ChangeNotifier {
       _busySpeaking = false;
     }
 
-    if (continuousWakeMode) {
-      await Future<void>.delayed(const Duration(milliseconds: 450));
-      if (!isListening) unawaited(startListening());
-    }
   }
 
   void _onResult(SpeechRecognitionResult result) {
@@ -345,11 +340,6 @@ class SangeetaService extends ChangeNotifier {
     isListening = status == 'listening';
     notifyListeners();
 
-    if ((status == 'notListening' || status == 'done') &&
-        continuousWakeMode &&
-        !_busySpeaking) {
-      unawaited(startListening());
-    }
   }
 
   Future<void> setPersonality(SangeetaPersonality value) async {

@@ -20,9 +20,9 @@ class DistributionService extends ChangeNotifier {
   static const _iosUrlKey = 'distribution_ios_url';
 
   String androidUrl =
-      'https://github.com/lrgroup-bot/Sangeet_duniya/releases/latest';
+      'https://github.com/lrgroup-bot/Sangeet_duniya/releases/download/v2.0.0/LRS-Sangeet-Duniya-v2.0.0.apk';
   String iosUrl =
-      'https://github.com/lrgroup-bot/Sangeet_duniya/releases/latest';
+      'https://github.com/lrgroup-bot/Sangeet_duniya/releases/download/v2.0.0/LRS-Sangeet-Duniya-v2.0.0.apk';
 
   String get downloadUrl => androidUrl;
 
