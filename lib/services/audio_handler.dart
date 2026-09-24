@@ -33,9 +33,9 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   Stream<Duration?> get durationStream => _player.durationStream;
   bool get isPlaying => _player.playing;
 
-  Future<void> playSong(Song song, {List<Song>? queue}) async {
-    if (queue != null && queue.isNotEmpty) {
-      _queue..clear()..addAll(queue);
+  Future<void> playSong(Song song, {List<Song>? songs}) async {
+    if (songs != null && songs.isNotEmpty) {
+      _queue..clear()..addAll(songs);
       final index = _queue.indexWhere((item) => item.id == song.id);
       _currentIndex = index < 0 ? 0 : index;
     } else if (_queue.isEmpty) {
@@ -126,7 +126,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToNext() async {
     if (_queue.isEmpty) _queue.addAll(demoSongs);
     _currentIndex = (_currentIndex + 1) % _queue.length;
-    await playSong(_queue[_currentIndex], queue: _queue);
+    await playSong(_queue[_currentIndex], songs: _queue);
   }
 
   @override

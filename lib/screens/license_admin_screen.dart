@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../main.dart';
+import '../services/auth_provider.dart';
 import '../models/license_plan.dart';
 import '../theme/app_theme.dart';
 import '../services/license_service.dart';

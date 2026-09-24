@@ -368,11 +368,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         subtitle: Text(
-                          user.phoneNumber + '\nValidity: ' + user.planCode,
+                          user.phoneNumber +
+                              '\nToken: ' +
+                              user.token +
+                              '\nActivated: ' +
+                              _formatTime(user.activatedAt) +
+                              '\nExpires: ' +
+                              (user.expiresAt == null
+                                  ? 'Lifetime'
+                                  : _formatTime(user.expiresAt!)),
                         ),
                         isThreeLine: true,
                         trailing: Text(
-                          _daysLabel(user),
+                          _remainingLabel(user),
                           textAlign: TextAlign.end,
                           style: TextStyle(
                             color: _statusColor(user),

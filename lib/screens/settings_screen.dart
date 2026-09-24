@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_provider.dart';
 
 import '../models/avatar_outfit.dart';
 import '../models/sangeeta_personality.dart';

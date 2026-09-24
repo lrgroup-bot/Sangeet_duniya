@@ -99,6 +99,7 @@ class LocalLanService extends ChangeNotifier {
   String get connectionLink {
     final host = _localIpv4.isNotEmpty ? _localIpv4.first : '127.0.0.1';
     return 'http://' + host + ':' + port.toString() + '/connect?key=' +
+        Uri.encodeQueryComponent(_accessKey);
   }
 
   Future<bool> registerUser({
@@ -230,7 +231,7 @@ class LocalLanService extends ChangeNotifier {
         case '/connect':
           _respond(request, 200, <String, dynamic>{
             'ok': true,
-            'message': 'Connected to LR\\'s Sangeet_Duniya admin phone.',
+            'message': "Connected to LR's Sangeet_Duniya admin phone.",
           });
           return;
         case '/register':

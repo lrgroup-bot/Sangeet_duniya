@@ -2,6 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../models/equalizer_profile.dart';
 import '../models/song.dart';
 import '../services/audio_cleanup_service.dart';
 import '../services/download_service.dart';
@@ -79,7 +80,11 @@ class PlayerScreen extends StatelessWidget {
                       final position = positionSnapshot.data ?? Duration.zero;
                       final duration = durationSnapshot.data ?? item.duration;
                       final max = ((duration?.inMilliseconds ?? 1).toDouble())
+                          .clamp(1.0, double.infinity)
+                          .toDouble();
                       final current = position.inMilliseconds.toDouble()
+                          .clamp(0.0, max)
+                          .toDouble();
                       return Column(children: [
                         Slider(min: 0, max: max, value: current, onChanged: (v) => audioHandler.seek(Duration(milliseconds: v.round()))),
                         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_format(position)), Text(_format(duration ?? Duration.zero))]),

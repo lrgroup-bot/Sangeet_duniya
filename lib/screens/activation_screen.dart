@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../services/auth_provider.dart';
 import '../services/local_lan_service.dart';
 import '../theme/app_theme.dart';
 

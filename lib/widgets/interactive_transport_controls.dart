@@ -111,8 +111,6 @@ class _InteractiveTransportControlsState
                       outfit: avatarProfileService.outfit,
                       pose: pose,
                       size: 96,
-                      riveUrl: avatarProfileService.riveUrl,
-                      stateMachine: avatarProfileService.riveStateMachine,
                     ),
                   ),
                 ),

@@ -32,4 +32,4 @@ class AudioCleanupService {
   }
   String _quote(String value) => "'" + value.replaceAll("'", "'\\\\''") + "'";
 }
-final audioCleanupService = AudioCleanupService();
+final audioCleanupService = AudioCleanupService.instance;

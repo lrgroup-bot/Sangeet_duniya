@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../services/library_store.dart';
 import '../models/equalizer_profile.dart';
 import '../services/equalizer_profile_service.dart';
 import '../theme/app_theme.dart';

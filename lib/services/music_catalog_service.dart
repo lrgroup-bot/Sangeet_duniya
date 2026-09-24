@@ -84,4 +84,4 @@ class MusicCatalogService {
   }
 }
 
-final musicCatalogService = MusicCatalogService();
+final musicCatalogService = MusicCatalogService.instance;
