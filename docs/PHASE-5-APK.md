@@ -2,7 +2,7 @@
 
 ## Status
 
-**IMPLEMENTING — AVATAR CONTROLS + PRIVATE LICENSING**
+**IMPLEMENTING — MUSIC ENGINE + AVATAR + PRIVATE LOCAL LICENSING**
 
 Phase 5 now includes the premium interactive Sangeeta layer plus a private activation gate.
 
@@ -19,6 +19,11 @@ Phase 5 now includes the premium interactive Sangeeta layer plus a private activ
 - Payment disabled: no payment gateway, checkout, subscription purchase, or money collection.
 - Local Admin Dashboard with user name, phone, access period and days-left statistics.
 - Free offline QR/download link generation.
+- Direct Internet music search/trending via Audius read-only API.
+- Local Auto EQ + Manual EQ.
+- Android live EQ/loudness effects.
+- Local Clean Audio export to FLAC for downloaded tracks.
+- Download controls respect source permissions.
 
 ## Mobile-only avatar runtime
 
@@ -35,8 +40,9 @@ The app does not collect money. The 7-day, 30-day, 365-day and Ultimate choices 
 ## Remaining Phase 5 work
 
 - Final 3D Sangeeta art pack based on the supplied visual references, while keeping the character original.
+- Add more direct, permitted music sources for a broader catalog.
 - Release signing and keystore strategy.
 - Production APK/AAB build.
 - Install and runtime regression on the user's physical Android phone.
-- Performance and startup profiling.
+- Performance and startup profiling, including audio-effect latency.
 - Final permissions/privacy review.
