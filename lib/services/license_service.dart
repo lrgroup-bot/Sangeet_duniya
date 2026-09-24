@@ -118,6 +118,28 @@ class LicenseService {
   static const _issuedTokenRecordsKey = 'issued_token_records_v2';
   static const _activatedTokenRecordKey = 'activated_token_record_v1';
 
+  /// Legacy long-token generator retained only so previously issued
+  /// licenses/tests remain compatible. New customer tokens must use
+  /// [generateActivationToken], which creates six-digit numeric codes.
+  String generateToken(
+    LicensePlan plan, {
+    String phoneNumber = '',
+  }) {
+    final now = DateTime.now().toUtc();
+    final expiry = plan.duration == null ? null : now.add(plan.duration!);
+    final payload = <String, dynamic>{
+      'v': 1,
+      'plan': plan.name,
+      'issued': now.millisecondsSinceEpoch,
+      'expires': expiry?.millisecondsSinceEpoch ?? 0,
+      'phone': phoneNumber.trim(),
+      'nonce': Random.secure().nextInt(0x7fffffff),
+    };
+    final payloadText =
+        base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
+    return 'LRS1.' + payloadText + '.' + _sign(payloadText);
+  }
+
   Future<ActivationTokenRecord> generateActivationToken(
     LicensePlan plan, {
     required String customerName,
