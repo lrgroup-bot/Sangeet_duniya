@@ -77,9 +77,17 @@ with Image.open(rendered).convert("RGBA") as source:
     for folder, pixels in sizes.items():
         out_dir = ROOT / f"android/app/src/main/res/{folder}"
         out_dir.mkdir(parents=True, exist_ok=True)
-        source.resize((pixels, pixels), Image.Resampling.LANCZOS).save(
-            out_dir / "ic_launcher.png"
-        )
+        resized = source.resize((pixels, pixels), Image.Resampling.LANCZOS)
+        resized.save(out_dir / "ic_launcher.png")
+        resized.save(out_dir / "ic_launcher_round.png")
+
+# Remove generated adaptive-icon XML so Android resolves the new PNG launcher
+# assets consistently across API levels.
+for adaptive in [
+    ROOT / "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+    ROOT / "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+]:
+    adaptive.unlink(missing_ok=True)
 
 stat_dir = ROOT / "android/app/src/main/res/drawable"
 stat_dir.mkdir(parents=True, exist_ok=True)
