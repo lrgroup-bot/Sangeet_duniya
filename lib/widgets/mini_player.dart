@@ -43,8 +43,6 @@ class MiniPlayer extends StatelessWidget {
                               ? SangeetaPose.dance
                               : SangeetaPose.sit,
                           size: 48,
-                          riveUrl: avatarProfileService.riveUrl,
-                          stateMachine: avatarProfileService.riveStateMachine,
                         ),
                       ),
                     ),
