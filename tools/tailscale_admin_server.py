@@ -4,6 +4,8 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import mimetypes
+import os
 import secrets
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -252,6 +254,59 @@ class Handler(BaseHTTPRequestHandler):
                 200,
                 {"ok": True, "app": APP, "server": "PC"},
             )
+
+        if path == "/avatar/status":
+            if not self.user_ok():
+                return self.json(401, {"ok": False, "error": "User key required."})
+            root = Path(
+                os.environ.get(
+                    "LRS_SANGEETA_AVATAR_ROOT",
+                    str(Path.home() / "LRS-Sangeet-Duniya" / "avatar"),
+                )
+            ).resolve()
+            video = root / "live_avatar.mp4"
+            ready = video.is_file() and video.stat().st_size > 0
+            return self.json(
+                200,
+                {
+                    "ok": True,
+                    "available": ready,
+                    "provider": "PC Live Avatar video" if ready else "PC avatar gateway",
+                    "message": "PC live-avatar video is ready." if ready else "PC gateway online; live-avatar video is not installed.",
+                    "videoUrl": "/avatar/media/live_avatar.mp4" if ready else "",
+                },
+            )
+
+        if path.startswith("/avatar/media/"):
+            if not self.user_ok():
+                return self.json(401, {"ok": False, "error": "User key required."})
+            name = path[len("/avatar/media/"):]
+            if Path(name).name != name or name != "live_avatar.mp4":
+                return self.json(404, {"ok": False, "error": "Not found."})
+            root = Path(
+                os.environ.get(
+                    "LRS_SANGEETA_AVATAR_ROOT",
+                    str(Path.home() / "LRS-Sangeet-Duniya" / "avatar"),
+                )
+            ).resolve()
+            media = (root / name).resolve()
+            if not media.is_file() or root not in media.parents:
+                return self.json(404, {"ok": False, "error": "Avatar media not found."})
+            try:
+                self.send_response(200)
+                self.send_header("Content-Type", mimetypes.guess_type(media.name)[0] or "video/mp4")
+                self.send_header("Content-Length", str(media.stat().st_size))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                with media.open("rb") as src:
+                    while True:
+                        chunk = src.read(1024 * 1024)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                return
+            except Exception:
+                return
 
         # Customer apps use this only to retrieve the USER KEY. The USER KEY
         # is intentionally shareable; the ADMIN KEY is never returned here.

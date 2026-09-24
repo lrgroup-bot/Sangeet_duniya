@@ -1,5 +1,8 @@
 name: Android CI
 
+permissions:
+  contents: write
+
 concurrency:
   group: android-ci-${{ github.ref }}
   cancel-in-progress: true
@@ -49,9 +52,25 @@ jobs:
       - name: Calculate APK SHA256
         run: sha256sum build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Upload release APK
+      - name: Prepare direct release asset
+        run: |
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk release/LRS-Sangeet-Duniya-v2.0.0.apk
+
+      - name: Upload CI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LRS-Sangeet-Duniya-v1.0.0-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: LRS-Sangeet-Duniya-v2.0.0-release
+          path: release/LRS-Sangeet-Duniya-v2.0.0.apk
           if-no-files-found: error
+
+      - name: Publish direct-download GitHub release
+        if: github.ref == 'refs/heads/tailscale-admin'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.0
+          target_commitish: tailscale-admin
+          name: LR's Sangeet_Duniya v2.0.0
+          generate_release_notes: true
+          make_latest: true
+          files: release/LRS-Sangeet-Duniya-v2.0.0.apk
