@@ -36,6 +36,7 @@ class SongCard extends StatelessWidget {
               onTap: () => Navigator.pop(context, 'favorite'),
             ),
             ListTile(
+              enabled: song.isDownloadable || libraryStore.isDownloaded(song.id),
               leading: Icon(
                 libraryStore.isDownloaded(song.id)
                     ? Icons.delete_outline_rounded
@@ -44,9 +45,13 @@ class SongCard extends StatelessWidget {
               title: Text(
                 libraryStore.isDownloaded(song.id)
                     ? 'Remove download'
-                    : 'Download for offline',
+                    : song.isDownloadable
+                        ? 'Download for offline'
+                        : 'Stream only (download unavailable)',
               ),
-              onTap: () => Navigator.pop(context, 'download'),
+              onTap: song.isDownloadable || libraryStore.isDownloaded(song.id)
+                  ? () => Navigator.pop(context, 'download')
+                  : null,
             ),
             if (libraryStore.playlistNames.isNotEmpty)
               ListTile(
@@ -72,6 +77,17 @@ class SongCard extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Download removed.')),
+          );
+        }
+        return;
+      }
+
+      if (!song.isDownloadable) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This source does not mark the track as downloadable.'),
+            ),
           );
         }
         return;
@@ -170,6 +186,12 @@ class SongCard extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: .65),
                           ),
+                        ),
+                        Text(
+                          song.source + ' • ' + song.qualityLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 10, color: Colors.white54),
                         ),
                         if (downloaded)
                           const Padding(
