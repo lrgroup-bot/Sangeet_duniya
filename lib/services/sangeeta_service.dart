@@ -11,6 +11,7 @@ import '../main.dart';
 import '../models/sangeeta_personality.dart';
 import '../models/song.dart';
 import 'permission_service.dart';
+import 'music_catalog_service.dart';
 
 class SangeetaService extends ChangeNotifier {
   static const _personalityKey = 'sangeeta_personality';
@@ -191,15 +192,18 @@ class SangeetaService extends ChangeNotifier {
 
     if (match != null) {
       final query = match.group(1)!.trim();
-      final song = _findSong(query);
-      if (song != null) {
-        await audioHandler.playSong(song);
+      final found = await _findSong(query);
+      if (found != null) {
+        final song = found.$1;
+        await audioHandler.playSong(song, queue: found.$2);
         await _speak(_replyFor(
-          'ହଁ ଜାନ୍… "' + song.title + '" ଚଳାଉଛି। 🎵',
+          'ହଁ ଜାନ୍… "' +
+              song.title +
+              '" ଚଳାଉଛି। Sangeeta Auto EQ ମଧ୍ୟ ଚୟନ କରିଦେଲି। 🎵',
         ));
       } else {
         await _speak(_replyFor(
-          'ସେଇ ଗୀତଟା ମୋ test library ରେ ମିଳିଲା ନାହିଁ। ଆଉ ଗୋଟେ ଗୀତର ନାମ କହ।',
+          'ସେଇ ଗୀତଟା online source ରେ ମିଳିଲା ନାହିଁ। ଆଉ ଗୋଟେ ଗୀତର ନାମ କହ।',
         ));
       }
       return;
@@ -246,19 +250,18 @@ class SangeetaService extends ChangeNotifier {
     return commands.any((command) => value == command);
   }
 
-  Song? _findSong(String query) {
+  Future<(Song, List<Song>)?> _findSong(String query) async {
+    try {
+      final online = await musicCatalogService.search(query, limit: 12);
+      if (online.isNotEmpty) return (online.first, online);
+    } catch (_) {}
+
     final normalized = query.toLowerCase();
     for (final song in demoSongs) {
-      if (song.title.toLowerCase() == normalized ||
-          song.artist.toLowerCase().contains(normalized) ||
-          song.category.toLowerCase() == normalized) {
-        return song;
-      }
-    }
-    for (final song in demoSongs) {
       if (song.title.toLowerCase().contains(normalized) ||
+          song.artist.toLowerCase().contains(normalized) ||
           song.category.toLowerCase().contains(normalized)) {
-        return song;
+        return (song, demoSongs);
       }
     }
     return null;
