@@ -164,7 +164,7 @@ class _SangeetaAvatarPainter extends CustomPainter {
             x - s * .028,
             legTop,
             s * .056,
-            (legBottom - legTop).clamp(s * .08, s * .30),
+            (legBottom - legTop).clamp(s * .08, s * .30).toDouble(),
           ),
           Radius.circular(s * .028),
         ),
@@ -361,7 +361,7 @@ class _SangeetaAvatarPainter extends CustomPainter {
         width: s * .18,
         height: s * .09,
       ),
-      shadowPaint.withOpacity(.16),
+      Paint()..color = skinShadow.withValues(alpha: .16),
     );
 
     // Brows, almond eyes, pupils.
