@@ -161,7 +161,7 @@ class SongCard extends StatelessWidget {
                       width: 64,
                       height: 64,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _fallbackArt(),
+                      errorBuilder: (_, _, _) => _fallbackArt(),
                     ),
                   ),
                   const SizedBox(width: 14),

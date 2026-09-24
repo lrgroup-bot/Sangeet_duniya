@@ -55,7 +55,7 @@ class LocalLanService extends ChangeNotifier {
       );
       _server!.listen(
         _handleRequest,
-        onError: (_, __) {},
+        onError: (_, _) {},
         cancelOnError: false,
       );
       await refreshNetworkInfo(notify: false);

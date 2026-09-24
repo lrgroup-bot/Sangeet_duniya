@@ -55,7 +55,7 @@ class PlayerScreen extends StatelessWidget {
                   aspectRatio: 1,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(32),
-                    child: Image.network(item.artUri?.toString() ?? '', fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(
+                    child: Image.network(item.artUri?.toString() ?? '', fit: BoxFit.cover, errorBuilder: (_, _, _) => Container(
                       color: const Color(0xFF17130A), alignment: Alignment.center,
                       child: const Icon(Icons.music_note_rounded, size: 110, color: AppTheme.gold),
                     )),
