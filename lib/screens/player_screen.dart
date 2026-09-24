@@ -173,7 +173,6 @@ class PlayerScreen extends StatelessWidget {
                   stream: audioHandler.playbackState,
                   builder: (context, snapshot) {
                     final state = snapshot.data;
-                    final playing = state?.playing ?? false;
                     final loading =
                         state?.processingState ==
                                 AudioProcessingState.loading ||
