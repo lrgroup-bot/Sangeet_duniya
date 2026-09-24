@@ -13,11 +13,21 @@ class LicenseAdminScreen extends StatefulWidget {
 }
 
 class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
+  final phoneController = TextEditingController();
   LicensePlan plan = LicensePlan.oneYear;
   String token = '';
 
+  @override
+  void dispose() {
+    phoneController.dispose();
+    super.dispose();
+  }
+
   Future<void> generate() async {
-    final value = await authProvider.generateToken(plan);
+    final value = await authProvider.generateToken(
+      plan,
+      phoneNumber: phoneController.text,
+    );
     if (!mounted) return;
     if (value == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -56,12 +66,21 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Choose validity, generate the token, then share it with the other phone.',
+                    'Add the recipient phone number, choose validity, then share the token.',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .68),
                     ),
                   ),
                   const SizedBox(height: 16),
+                  TextField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Recipient phone number',
+                      hintText: '+91XXXXXXXXXX',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   DropdownButtonFormField<LicensePlan>(
                     initialValue: plan,
                     decoration: const InputDecoration(labelText: 'Validity'),
