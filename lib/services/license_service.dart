@@ -247,6 +247,7 @@ class LicenseService {
       _issuedTokenRecordsKey,
       updated.map((value) => jsonEncode(value.toJson())).toList(),
     );
+    await rememberActivatedRecord(activated);
     return activated;
   }
 
