@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/license_plan.dart';
 
@@ -40,6 +41,7 @@ class LicenseService {
   // server-backed licensing or asymmetric signatures.
   static const _productSecret = 'LRS_SANGEET_DUNIYA_PRIVATE_2026';
   static const ownerPin = 'LRS-OWNER-2026';
+  static const _issuedTokensKey = 'issued_tokens_v1';
 
   String generateToken(
     LicensePlan plan, {
@@ -60,6 +62,24 @@ class LicenseService {
     final payloadText =
         base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
     return 'LRS1.' + payloadText + '.' + _sign(payloadText);
+  }
+
+  Future<void> rememberToken(String token) async {
+    final clean = token.trim();
+    if (clean.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final values = prefs.getStringList(_issuedTokensKey) ?? <String>[];
+    if (!values.contains(clean)) {
+      values.add(clean);
+      await prefs.setStringList(_issuedTokensKey, values);
+    }
+  }
+
+  Future<List<String>> issuedTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    return List.unmodifiable(
+      prefs.getStringList(_issuedTokensKey) ?? <String>[],
+    );
   }
 
   LicenseInfo? validateToken(String rawToken) {
