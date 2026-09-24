@@ -7,7 +7,6 @@ import '../theme/app_theme.dart';
 import '../services/avatar_profile_service.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
-import '../widgets/sangeeta_logo.dart';
 import 'auth_gate.dart';
 
 class SplashScreen extends StatefulWidget {
