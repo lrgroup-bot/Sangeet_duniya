@@ -947,6 +947,26 @@ class LocalLanService extends ChangeNotifier {
       return;
     }
 
+    final records = await LicenseService.instance.issuedTokenRecords();
+    final pending = records.where((item) => item.token == token).toList();
+    if (pending.isEmpty) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Invalid, expired, or unknown activation token.',
+      });
+      return;
+    }
+
+    final expectedName = pending.first.customerName.trim();
+    if (expectedName.isNotEmpty &&
+        expectedName.toLowerCase() != name.toLowerCase()) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Name does not match administrator verification.',
+      });
+      return;
+    }
+
     final record = await LicenseService.instance.consumeActivationToken(
       token,
       phoneNumber: phone,
@@ -956,16 +976,6 @@ class LocalLanService extends ChangeNotifier {
       _respond(request, 403, <String, dynamic>{
         'ok': false,
         'error': 'Invalid, expired, already-used, or phone-bound token.',
-      });
-      return;
-    }
-
-    final verifiedName = record.customerName.trim();
-    if (verifiedName.isNotEmpty &&
-        verifiedName.toLowerCase() != name.toLowerCase()) {
-      _respond(request, 403, <String, dynamic>{
-        'ok': false,
-        'error': 'Name does not match administrator verification.',
       });
       return;
     }
