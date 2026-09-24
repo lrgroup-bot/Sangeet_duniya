@@ -1,52 +1,112 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
 <defs>
-<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#020202"/><stop offset=".55" stop-color="#201305"/><stop offset="1" stop-color="#050505"/></linearGradient>
-<linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF0A6"/><stop offset=".3" stop-color="#FFD76A"/><stop offset=".55" stop-color="#FFB928"/><stop offset=".8" stop-color="#FFF2B0"/><stop offset="1" stop-color="#A96600"/></linearGradient>
-<radialGradient id="skin"><stop offset="0" stop-color="#FFDCC8"/><stop offset=".75" stop-color="#E4A488"/><stop offset="1" stop-color="#B96C56"/></radialGradient>
-<linearGradient id="dress" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5A411D"/><stop offset="1" stop-color="#080807"/></linearGradient>
-<filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#020202"/><stop offset=".5" stop-color="#171005"/><stop offset="1" stop-color="#030303"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFF6C7"/><stop offset=".22" stop-color="#FFD76A"/>
+    <stop offset=".5" stop-color="#FFB52A"/><stop offset=".74" stop-color="#FFF0A6"/><stop offset="1" stop-color="#9A5A00"/>
+  </linearGradient>
+  <linearGradient id="goldDeep" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#FFE889"/><stop offset=".5" stop-color="#FFB21F"/><stop offset="1" stop-color="#7A4300"/>
+  </linearGradient>
+  <radialGradient id="skin" cx=".45" cy=".34" r=".7">
+    <stop offset="0" stop-color="#FFE6D8"/><stop offset=".6" stop-color="#E7A78B"/><stop offset="1" stop-color="#A95E4D"/>
+  </radialGradient>
+  <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#3A1A10"/><stop offset=".45" stop-color="#160B08"/><stop offset="1" stop-color="#050303"/>
+  </linearGradient>
+  <linearGradient id="dress" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#3A2813"/><stop offset=".35" stop-color="#17100A"/><stop offset="1" stop-color="#050505"/>
+  </linearGradient>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+    <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".75"/>
+  </filter>
+  <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="4"/>
+  </filter>
 </defs>
-<rect width="1024" height="1024" rx="180" fill="url(#bg)"/>
-<rect x="30" y="30" width="964" height="964" rx="155" fill="none" stroke="url(#gold)" stroke-width="22"/>
-<path d="M95 440C250 315 375 330 500 385C650 450 790 350 920 240" fill="none" stroke="url(#gold)" stroke-width="8" opacity=".7" filter="url(#glow)"/>
-<g fill="#FFD76A" opacity=".95"><path d="M110 245h20v70c0 18-13 31-29 31s-25-9-25-22c0-17 14-28 34-29v-50z"/><path d="M900 495h20v66c0 17-12 29-27 29s-24-9-24-21c0-15 13-25 31-26v-48z"/></g>
 
-<!-- body -->
-<path d="M238 900c20-160 108-250 266-250s250 91 282 250z" fill="url(#dress)" stroke="url(#gold)" stroke-width="7"/>
-<path d="M690 675c67-88 101-175 105-292 2-58-25-77-50-69-22 7-25 39-28 87l-40 180-62 96z" fill="url(#skin)" stroke="#8D5443" stroke-width="4"/>
+<rect width="1024" height="1024" rx="190" fill="url(#bg)"/>
+<rect x="28" y="28" width="968" height="968" rx="166" fill="none" stroke="#5F3A00" stroke-width="28" opacity=".7"/>
+<rect x="36" y="36" width="952" height="952" rx="158" fill="none" stroke="url(#gold)" stroke-width="16" filter="url(#glow)"/>
 
-<!-- neck + face -->
-<path d="M442 565h138v125H442z" fill="url(#skin)" stroke="#8D5443" stroke-width="4"/>
-<ellipse cx="512" cy="398" rx="185" ry="228" fill="url(#skin)" stroke="#8D5443" stroke-width="5"/>
-<path d="M332 405c-31-150 48-278 182-278s215 116 176 281c-18-87-75-153-151-167-67-13-128 23-164 91-18 35-29 61-43 73z" fill="#1D100C"/>
-<path d="M340 388c-25 94 4 218 92 263-60-108-48-196-29-270-21-29-50-26-63 7z" fill="#1D100C"/>
-<path d="M680 396c26 83 2 193-79 254 51-101 40-197 23-266 22-28 48-14 56 12z" fill="#1D100C"/>
+<g opacity=".9" filter="url(#soft)" fill="none" stroke="url(#gold)" stroke-linecap="round">
+  <path d="M78 704 C220 585 335 585 458 648 C604 722 748 665 938 508" stroke-width="7"/>
+  <path d="M70 760 C214 646 340 650 470 710 C612 775 765 731 946 585" stroke-width="4"/>
+</g>
+
+<!-- 3D avatar body -->
+<path d="M214 926 C245 760 348 676 512 676 C676 676 780 764 812 926 Z"
+      fill="url(#dress)" stroke="url(#gold)" stroke-width="9" filter="url(#shadow)"/>
+<path d="M300 812 C372 744 438 721 512 721 C586 721 653 745 724 812"
+      fill="none" stroke="#A66A18" stroke-width="11" opacity=".55"/>
+<path d="M350 865 C413 824 608 824 676 865" fill="none" stroke="#F2C55B" stroke-width="6" opacity=".55"/>
+
+<!-- neck -->
+<path d="M434 574 L590 574 L590 710 Q512 754 434 710 Z" fill="url(#skin)" stroke="#8D5443" stroke-width="5"/>
+
+<!-- hair back -->
+<path d="M322 404 C286 229 383 118 512 118 C641 118 738 231 702 411
+         C688 502 633 597 560 630 L424 620 C354 584 336 497 322 404 Z"
+      fill="url(#hair)" stroke="#6B3B26" stroke-width="7" filter="url(#shadow)"/>
+
+<!-- face -->
+<ellipse cx="512" cy="392" rx="176" ry="213" fill="url(#skin)" stroke="#8C5444" stroke-width="5" filter="url(#shadow)"/>
+
+<!-- hair crown -->
+<path d="M336 392 C306 240 390 126 512 126 C634 126 716 239 687 393
+         C659 298 611 238 538 226 C466 214 392 257 350 340 Z" fill="url(#hair)"/>
+<path d="M351 354 C332 438 343 523 411 587 C352 543 315 468 322 388 Z" fill="#110806"/>
+<path d="M673 354 C691 439 680 521 615 587 C667 540 700 466 695 389 Z" fill="#110806"/>
 
 <!-- headphones -->
-<path d="M332 360c-8-142 74-236 180-236s191 96 180 236" fill="none" stroke="#090909" stroke-width="45"/>
-<path d="M332 360c-8-142 74-236 180-236s191 96 180 236" fill="none" stroke="url(#gold)" stroke-width="9"/>
-<rect x="301" y="326" width="86" height="145" rx="36" fill="#090909" stroke="url(#gold)" stroke-width="9"/>
-<rect x="637" y="326" width="86" height="145" rx="36" fill="#090909" stroke="url(#gold)" stroke-width="9"/>
-<circle cx="344" cy="390" r="13" fill="#FFD76A"/><circle cx="680" cy="390" r="13" fill="#FFD76A"/>
+<path d="M324 364 C315 206 399 102 512 102 C625 102 710 205 700 364"
+      fill="none" stroke="#060606" stroke-width="56"/>
+<path d="M324 364 C315 206 399 102 512 102 C625 102 710 205 700 364"
+      fill="none" stroke="url(#gold)" stroke-width="11" filter="url(#glow)"/>
+<rect x="290" y="314" width="84" height="150" rx="34" fill="#090909" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
+<rect x="650" y="314" width="84" height="150" rx="34" fill="#090909" stroke="url(#gold)" stroke-width="10" filter="url(#shadow)"/>
+<circle cx="332" cy="389" r="21" fill="#1C1208" stroke="#FFD76A" stroke-width="4"/>
+<circle cx="692" cy="389" r="21" fill="#1C1208" stroke="#FFD76A" stroke-width="4"/>
+<path d="M322 380 L342 380 L342 399 L322 399 Z" fill="#FFD76A" opacity=".85"/>
+<path d="M682 380 L702 380 L702 399 L682 399 Z" fill="#FFD76A" opacity=".85"/>
 
-<!-- face details -->
-<path d="M421 383c19-16 43-19 64-6M539 377c21-13 45-10 64 6" fill="none" stroke="#3B211A" stroke-width="11" stroke-linecap="round"/>
-<circle cx="453" cy="402" r="8" fill="#24130F"/><circle cx="571" cy="402" r="8" fill="#24130F"/>
-<path d="M503 424c-4 24-3 33 10 39" fill="none" stroke="#B56D5A" stroke-width="5" stroke-linecap="round"/>
-<path d="M469 486c29 27 61 27 91-2" fill="none" stroke="#A73A3E" stroke-width="10" stroke-linecap="round"/>
-<circle cx="512" cy="337" r="8" fill="#B71C1C"/>
+<!-- face highlights/details -->
+<path d="M414 374 Q450 349 481 374" fill="none" stroke="#3C241C" stroke-width="10" stroke-linecap="round"/>
+<path d="M543 374 Q574 349 610 374" fill="none" stroke="#3C241C" stroke-width="10" stroke-linecap="round"/>
+<ellipse cx="450" cy="395" rx="9" ry="7" fill="#24150F"/>
+<ellipse cx="574" cy="395" rx="9" ry="7" fill="#24150F"/>
+<path d="M508 419 Q498 455 515 463" fill="none" stroke="#B66D59" stroke-width="5" stroke-linecap="round"/>
+<path d="M461 491 Q512 528 564 491" fill="none" stroke="#9D3A48" stroke-width="13" stroke-linecap="round"/>
+<path d="M469 485 Q512 511 554 485" fill="none" stroke="#FFB5AF" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+<circle cx="512" cy="330" r="9" fill="#B71C2B"/>
+<circle cx="462" cy="455" r="9" fill="#F2A18E" opacity=".42"/>
+<circle cx="563" cy="455" r="9" fill="#F2A18E" opacity=".42"/>
 
-<!-- raised arm + earcup -->
-<path d="M722 329c2-42 14-74 35-95 15-15 32-7 29 9l-9 31c17-4 29 7 25 21-4 16-22 28-39 37l-3 41z" fill="url(#skin)" stroke="#8D5443" stroke-width="4"/>
-<circle cx="681" cy="393" r="32" fill="#0B0B0B" stroke="url(#gold)" stroke-width="8"/>
+<!-- jewelry -->
+<path d="M452 591 Q512 646 572 591" fill="none" stroke="#FFD76A" stroke-width="8"/>
+<path d="M512 607 l10 14 17 3 -13 12 3 17 -17 -8 -17 8 3 -17 -13 -12 17 -3z"
+      fill="#FFF0A6" stroke="#B56B00" stroke-width="3"/>
 
-<!-- gold 3D lettering -->
-<g font-family="Georgia,serif" font-weight="900" text-anchor="middle">
-<text x="512" y="784" font-size="120" fill="#7E4B00" transform="translate(9 12)">LR’s</text>
-<text x="512" y="784" font-size="120" fill="url(#gold)" stroke="#FFF0A6" stroke-width="2">LR’s</text>
-<text x="512" y="874" font-size="72" fill="#6A3A00" transform="translate(8 10)">Sangeet Dunia</text>
-<text x="512" y="874" font-size="72" fill="#FFF0D4" stroke="#C58B1B" stroke-width="2">Sangeet Dunia</text>
+<!-- musical accents -->
+<g fill="url(#gold)" stroke="#B66A00" stroke-width="3" filter="url(#glow)">
+  <path d="M106 510 h18 v58 c0 18 -13 30 -29 30 c-17 0 -28 -10 -28 -24 c0 -17 15 -29 39 -30 z"/>
+  <path d="M880 258 h18 v54 c0 18 -13 29 -28 29 c-17 0 -27 -10 -27 -23 c0 -16 14 -28 37 -29 z"/>
 </g>
-<path d="M330 925q182-54 364 0" fill="none" stroke="url(#gold)" stroke-width="9" stroke-linecap="round"/>
-<path d="M478 925c22 18 46 18 68 0" fill="none" stroke="#F04B72" stroke-width="9" stroke-linecap="round"/>
+
+<!-- extruded 3D title -->
+<g font-family="Georgia,serif" font-weight="900" text-anchor="middle" filter="url(#shadow)">
+  <text x="520" y="798" font-size="122" fill="#6A3A00" transform="translate(12 16)">LR’s</text>
+  <text x="512" y="790" font-size="122" fill="url(#gold)" stroke="#FFF2B5" stroke-width="3">LR’s</text>
+  <text x="520" y="894" font-size="70" fill="#5B3200" transform="translate(10 13)">Sangeet Duniya</text>
+  <text x="512" y="886" font-size="70" fill="#FFF4DC" stroke="#C78A18" stroke-width="3">Sangeet Duniya</text>
+</g>
+
+<path d="M305 932 Q512 868 719 932" fill="none" stroke="#5A3300" stroke-width="15" opacity=".8"/>
+<path d="M305 920 Q512 856 719 920" fill="none" stroke="url(#gold)" stroke-width="9" filter="url(#glow)"/>
+<path d="M488 925 Q512 956 536 925" fill="none" stroke="#F24F72" stroke-width="10" stroke-linecap="round"/>
 </svg>
