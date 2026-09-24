@@ -228,23 +228,29 @@ class PlayerScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                ...AvatarOutfit.values.map(
-                  (outfit) => RadioListTile<AvatarOutfit>(
-                    value: outfit,
-                    groupValue: avatarProfileService.savedSongOutfit(songId) ??
-                        avatarProfileService.outfitForSong(song),
-                    onChanged: (value) async {
-                      if (value == null) return;
-                      await avatarProfileService.setSongOutfit(songId, value);
-                      if (context.mounted) Navigator.of(sheetContext).pop();
-                    },
+                ...AvatarOutfit.values.map((outfit) {
+                  final selected =
+                      (avatarProfileService.savedSongOutfit(songId) ??
+                              avatarProfileService.outfitForSong(song)) ==
+                          outfit;
+                  return ListTile(
+                    leading: Icon(
+                      selected
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: selected ? AppTheme.gold : Colors.white54,
+                    ),
                     title: Text(outfit.label),
-                    secondary: const Icon(
+                    trailing: const Icon(
                       Icons.checkroom_rounded,
                       color: AppTheme.gold,
                     ),
-                  ),
-                ),
+                    onTap: () async {
+                      await avatarProfileService.setSongOutfit(songId, outfit);
+                      if (context.mounted) Navigator.of(sheetContext).pop();
+                    },
+                  );
+                }),
                 TextButton(
                   onPressed: () async {
                     await avatarProfileService.clearSongOutfit(songId);
