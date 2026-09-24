@@ -22,6 +22,7 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Timer? _timer;
+  late final TextEditingController _tailscaleController;
 
   String _formatTime(DateTime value) {
     final local = value.toLocal();
@@ -149,6 +150,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _tailscaleController = TextEditingController(
+      text: localLanService.remoteAdminLink,
+    );
     localLanService.start();
     _refreshRemote();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
@@ -162,9 +166,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _saveTailscaleLink() async {
+    await localLanService.setRemoteAdminLink(_tailscaleController.text);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tailscale PC admin link saved.')),
+    );
+  }
+
+  Future<void> _syncPc() async {
+    await _saveTailscaleLink();
+    final ok = await localLanService.syncTokensToRemote();
+    final usersOk = await localLanService.syncFromAdmin();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok || usersOk
+              ? 'Tailscale PC sync completed.'
+              : 'PC sync could not connect. Check Tailscale and the admin URL.',
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _tailscaleController.dispose();
     super.dispose();
   }
 
@@ -255,7 +284,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         const SizedBox(height: 6),
                         Text(
                           localLanService.isRunning
-                              ? 'Share this link with a phone that is on the same Wi-Fi.'
+                              ? 'Same-Wi-Fi link for direct phone-to-phone registration.'
                               : 'Starting local admin service…',
                         ),
                         const SizedBox(height: 12),
@@ -320,6 +349,65 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
+                          'Tailscale PC admin',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Optional remote PC server. Use the private Tailscale Serve URL (recommended) and keep your existing Tailscale projects untouched.',
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _tailscaleController,
+                          keyboardType: TextInputType.url,
+                          decoration: const InputDecoration(
+                            labelText: 'PC admin URL',
+                            hintText: 'https://your-pc.tailnet.ts.net:8443/?key=...',
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _saveTailscaleLink,
+                                icon: const Icon(Icons.save_rounded),
+                                label: const Text('Save'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: _syncPc,
+                                icon: const Icon(Icons.sync_rounded),
+                                label: const Text('Sync PC'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'New tokens are also sent here automatically after generation.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: .60),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
                           'User sign-ups',
                           style: TextStyle(
                             fontSize: 19,
@@ -328,7 +416,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'New sign-ups arrive automatically over the same Wi-Fi and refresh every 5 seconds while this dashboard is open.',
+                          'New sign-ups can arrive over the same Wi-Fi or from the configured Tailscale PC server.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: .70),
                           ),
