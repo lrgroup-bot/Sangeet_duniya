@@ -10,16 +10,17 @@ class LicenseInfo {
     required this.plan,
     required this.issuedAt,
     required this.expiresAt,
+    required this.phoneNumber,
     required this.token,
   });
 
   final LicensePlan plan;
   final DateTime issuedAt;
   final DateTime? expiresAt;
+  final String phoneNumber;
   final String token;
 
   bool get isLifetime => expiresAt == null;
-
   bool get isExpired =>
       expiresAt != null && !DateTime.now().toUtc().isBefore(expiresAt!);
 
@@ -35,12 +36,15 @@ class LicenseService {
 
   static final instance = LicenseService._();
 
-  // Practical private-app gate. For a public commercial release, use
-  // server-backed licensing or an asymmetric signature scheme.
+  // Practical private-app gate. A public commercial release should use
+  // server-backed licensing or asymmetric signatures.
   static const _productSecret = 'LRS_SANGEET_DUNIYA_PRIVATE_2026';
   static const ownerPin = 'LRS-OWNER-2026';
 
-  String generateToken(LicensePlan plan) {
+  String generateToken(
+    LicensePlan plan, {
+    String phoneNumber = '',
+  }) {
     final now = DateTime.now().toUtc();
     final expiry = plan.duration == null ? null : now.add(plan.duration!);
 
@@ -49,13 +53,13 @@ class LicenseService {
       'plan': plan.name,
       'issued': now.millisecondsSinceEpoch,
       'expires': expiry?.millisecondsSinceEpoch ?? 0,
+      'phone': phoneNumber.trim(),
       'nonce': Random.secure().nextInt(0x7fffffff),
     };
 
     final payloadText =
         base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
-    final signature = _sign(payloadText);
-    return 'LRS1.$payloadText.$signature';
+    return 'LRS1.' + payloadText + '.' + _sign(payloadText);
   }
 
   LicenseInfo? validateToken(String rawToken) {
@@ -74,29 +78,27 @@ class LicenseService {
         return null;
       }
 
-      final planName = decoded['plan']?.toString();
       final plan = LicensePlan.values.firstWhere(
-        (value) => value.name == planName,
+        (value) => value.name == decoded['plan']?.toString(),
       );
       final issuedMs = int.parse(decoded['issued'].toString());
       final expiresMs = int.parse(decoded['expires'].toString());
 
-      final issuedAt = DateTime.fromMillisecondsSinceEpoch(
-        issuedMs,
-        isUtc: true,
-      );
       final expiresAt = expiresMs == 0
           ? null
           : DateTime.fromMillisecondsSinceEpoch(expiresMs, isUtc: true);
-
       if (expiresAt != null && !DateTime.now().toUtc().isBefore(expiresAt)) {
         return null;
       }
 
       return LicenseInfo(
         plan: plan,
-        issuedAt: issuedAt,
+        issuedAt: DateTime.fromMillisecondsSinceEpoch(
+          issuedMs,
+          isUtc: true,
+        ),
         expiresAt: expiresAt,
+        phoneNumber: decoded['phone']?.toString() ?? '',
         token: token,
       );
     } catch (_) {
@@ -107,7 +109,9 @@ class LicenseService {
   bool verifyOwnerPin(String value) => value.trim() == ownerPin;
 
   String _sign(String payload) {
-    final mac = Hmac(sha256, utf8.encode(_productSecret));
-    return mac.convert(utf8.encode(payload)).toString();
+    return Hmac(
+      sha256,
+      utf8.encode(_productSecret),
+    ).convert(utf8.encode(payload)).toString();
   }
 }
