@@ -26,6 +26,7 @@ class Store:
         self.cfg = self.root / "config.json"
         self.tokens = self.root / "tokens.json"
         self.users = self.root / "users.json"
+        self.pending = self.root / "pending.json"
         self._ensure()
 
     def _read(self, path, default):
@@ -56,6 +57,8 @@ class Store:
             self._write(self.tokens, {"activationTokens": [], "legacyTokens": []})
         if not self.users.exists():
             self._write(self.users, {"users": []})
+        if not self.pending.exists():
+            self._write(self.pending, {"requests": []})
 
     @property
     def user_key(self):
@@ -108,6 +111,25 @@ class Store:
 
     def get_users(self):
         return self._read(self.users, {"users": []}).get("users", [])
+
+    def get_pending(self):
+        data = self._read(self.pending, {"requests": []})
+        raw = data.get("requests", [])
+        return [x for x in raw if isinstance(x, dict)]
+
+    def save_pending(self, request):
+        items = self.get_pending()
+        phone = str(request.get("phone", ""))
+        items = [x for x in items if str(x.get("phone", "")) != phone]
+        items.append(request)
+        self._write(self.pending, {"requests": items})
+
+    def remove_pending(self, phone):
+        items = [
+            x for x in self.get_pending()
+            if str(x.get("phone", "")) != str(phone)
+        ]
+        self._write(self.pending, {"requests": items})
 
     def save_user(self, user):
         items = self.get_users()
