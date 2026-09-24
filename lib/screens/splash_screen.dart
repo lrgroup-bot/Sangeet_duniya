@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/permission_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/sangeeta_logo.dart';
-import 'shell_screen.dart';
+import 'auth_gate.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,25 +15,25 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  Timer? _timer;
+  Timer? timer;
 
   @override
   void initState() {
     super.initState();
     PermissionService.instance.requestNotifications();
-    _timer = Timer(const Duration(milliseconds: 1800), _openHome);
+    timer = Timer(const Duration(milliseconds: 1800), openHome);
   }
 
-  void _openHome() {
+  void openHome() {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const ShellScreen()),
+      MaterialPageRoute<void>(builder: (_) => const AuthGate()),
     );
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    timer?.cancel();
     super.dispose();
   }
 
