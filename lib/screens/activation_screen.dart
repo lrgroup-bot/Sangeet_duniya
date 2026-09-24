@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../services/local_lan_service.dart';
 import '../theme/app_theme.dart';
 
 class ActivationScreen extends StatefulWidget {
@@ -13,7 +14,12 @@ class ActivationScreen extends StatefulWidget {
 class _ActivationScreenState extends State<ActivationScreen> {
   final nameController = TextEditingController();
   final tokenController = TextEditingController();
-  final phoneController = TextEditingController();
+  final phoneController = TextEditingController(
+    text: authProvider.phoneNumber,
+  );
+  final adminLinkController = TextEditingController(
+    text: localLanService.savedAdminLink,
+  );
   final pinController = TextEditingController();
 
   bool busy = false;
@@ -24,6 +30,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
     nameController.dispose();
     tokenController.dispose();
     phoneController.dispose();
+    adminLinkController.dispose();
     pinController.dispose();
     super.dispose();
   }
@@ -32,9 +39,15 @@ class _ActivationScreenState extends State<ActivationScreen> {
     FocusScope.of(context).unfocus();
     final name = nameController.text.trim();
     final phone = phoneController.text.trim();
+    final token = tokenController.text.trim();
+    final adminLink = adminLinkController.text.trim();
 
-    if (name.isEmpty || phone.length < 7) {
-      setState(() => error = 'Please enter your name and valid phone number.');
+    if (name.isEmpty || phone.length < 7 || token.isEmpty) {
+      setState(() => error = 'Enter your name, phone number and token.');
+      return;
+    }
+    if (adminLink.isEmpty) {
+      setState(() => error = 'Enter the Admin Wi-Fi Link from the owner phone.');
       return;
     }
 
@@ -43,28 +56,37 @@ class _ActivationScreenState extends State<ActivationScreen> {
       error = null;
     });
 
-    final ok = await authProvider.activateWithToken(
-      tokenController.text,
+    final registered = await localLanService.registerUser(
+      adminLink: adminLink,
+      name: name,
       phoneNumber: phone,
+      token: token,
     );
 
     if (!mounted) return;
-    setState(() => busy = false);
 
-    if (!ok || authProvider.license == null) {
-      setState(() => error = 'Invalid token, phone number, or expiry.');
+    if (!registered) {
+      setState(() {
+        busy = false;
+        error =
+            'Admin phone not reachable or token rejected. Put both phones on the same Wi-Fi and check the Admin Wi-Fi Link.';
+      });
       return;
     }
 
-    final license = authProvider.license!;
-    await userRegistry.saveUser(
-      name: name,
+    final ok = await authProvider.activateWithToken(
+      token,
       phoneNumber: phone,
-      planCode: license.plan.name,
-      issuedAt: license.issuedAt,
-      expiresAt: license.expiresAt,
-      token: license.token,
+      name: name,
     );
+
+    if (!mounted) return;
+
+    setState(() => busy = false);
+
+    if (!ok) {
+      setState(() => error = 'Token validation failed or the token has expired.');
+    }
   }
 
   Future<void> owner() async {
@@ -103,7 +125,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Free private activation',
+                    'Private Wi-Fi signup',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .65),
                     ),
@@ -132,7 +154,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                           ),
                           const SizedBox(height: 14),
                           const Text(
-                            'Phone number',
+                            'Mobile number',
                             style: TextStyle(
                               fontSize: 19,
                               fontWeight: FontWeight.w900,
@@ -148,7 +170,32 @@ class _ActivationScreenState extends State<ActivationScreen> {
                           ),
                           const SizedBox(height: 14),
                           const Text(
-                            'Activation token',
+                            'Admin Wi-Fi link',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: adminLinkController,
+                            keyboardType: TextInputType.url,
+                            decoration: const InputDecoration(
+                              hintText:
+                                  'http://192.168.x.x:40425/connect?key=...',
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Both phones must be connected to the same Wi-Fi network.',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: .60),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Token ID',
                             style: TextStyle(
                               fontSize: 19,
                               fontWeight: FontWeight.w900,
@@ -164,20 +211,20 @@ class _ActivationScreenState extends State<ActivationScreen> {
                               hintText: 'LRS1....',
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton.icon(
                               onPressed: busy ? null : activate,
-                              icon: const Icon(Icons.verified_rounded),
+                              icon: const Icon(Icons.person_add_alt_1_rounded),
                               label: Text(
-                                busy ? 'Checking…' : 'Activate app',
+                                busy ? 'Signing up…' : 'Sign up & enter app',
                               ),
                             ),
                           ),
                           const SizedBox(height: 14),
                           const Text(
-                            'Payment is disabled. There are no paid plans or payment gateways in the app. Validity is only an access period.',
+                            'No cloud, no payment, no subscription. Signup is sent directly from this phone to the administrator phone over the same Wi-Fi.',
                             style: TextStyle(
                               color: AppTheme.gold2,
                               fontWeight: FontWeight.w800,
@@ -192,7 +239,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                     child: ExpansionTile(
                       title: const Text('Owner / Token generator'),
                       subtitle: const Text(
-                        'Use on your administrator phone only',
+                        'Use on the administrator phone only',
                       ),
                       childrenPadding:
                           const EdgeInsets.fromLTRB(18, 0, 18, 18),
@@ -228,12 +275,12 @@ class _ActivationScreenState extends State<ActivationScreen> {
                   ],
                   const SizedBox(height: 18),
                   const Text(
-                    'Access periods: 7 days, 30 days, 365 days, or Ultimate Lifetime.',
+                    'Access validity comes from the token: 7 days, 30 days, 365 days, or Ultimate Lifetime.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'This is a private offline activation system, not a paid subscription service.',
+                    'When the token expires, the app automatically returns to this signup page.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12),
                   ),
