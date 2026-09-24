@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
-import '../services/license_service.dart';
 import '../theme/app_theme.dart';
 
 class ActivationScreen extends StatefulWidget {
@@ -13,6 +12,7 @@ class ActivationScreen extends StatefulWidget {
 
 class _ActivationScreenState extends State<ActivationScreen> {
   final tokenController = TextEditingController();
+  final phoneController = TextEditingController();
   final pinController = TextEditingController();
   bool busy = false;
   String? error;
@@ -20,6 +20,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
   @override
   void dispose() {
     tokenController.dispose();
+    phoneController.dispose();
     pinController.dispose();
     super.dispose();
   }
@@ -30,11 +31,16 @@ class _ActivationScreenState extends State<ActivationScreen> {
       busy = true;
       error = null;
     });
-    final ok = await authProvider.activateWithToken(tokenController.text);
+
+    final ok = await authProvider.activateWithToken(
+      tokenController.text,
+      phoneNumber: phoneController.text,
+    );
+
     if (!mounted) return;
     setState(() => busy = false);
     if (!ok) {
-      setState(() => error = 'Invalid or expired activation token.');
+      setState(() => error = 'Invalid token, phone number, or expiry.');
     }
   }
 
@@ -82,13 +88,29 @@ class _ActivationScreenState extends State<ActivationScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Enter activation token',
+                            'Phone number',
                             style: TextStyle(
                               fontSize: 19,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              hintText: '+91XXXXXXXXXX',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Activation token',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           TextField(
                             controller: tokenController,
                             minLines: 3,
@@ -177,30 +199,9 @@ class _ActivationScreenState extends State<ActivationScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Personal-use licensing only. This offline gate is not a tamper-proof commercial DRM system.',
+                    'Personal-use licensing only. This offline gate is not tamper-proof commercial DRM.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                  TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'The owner PIN is intentionally kept out of normal navigation.',
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('Owner help'),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    LicenseService.ownerPin,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.white.withValues(alpha: .18),
-                    ),
                   ),
                 ],
               ),
