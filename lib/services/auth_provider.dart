@@ -146,20 +146,6 @@ class AuthProvider extends ChangeNotifier {
     return record;
   }
 
-  Future<String?> generateToken(
-    LicensePlan plan, {
-    String phoneNumber = '',
-  }) async {
-    if (!isOwner) return null;
-    final record = await LicenseService.instance.generateActivationToken(
-      plan,
-      customerName: '',
-      phoneNumber: phoneNumber,
-    );
-    await localLanService.syncTokensToRemote();
-    return record.token;
-  }
-
   Future<void> signOut() async {
     _expiryTimer?.cancel();
     _expiryTimer = null;
