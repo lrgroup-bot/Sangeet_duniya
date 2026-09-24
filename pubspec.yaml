@@ -1,7 +1,7 @@
 name: lrs_sangeet_duniya
 description: LR's Sangeet_Duniya - free music app with background playback and Sangeeta companion.
 publish_to: "none"
-version: 0.5.0+6
+version: 0.5.1+7
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -20,7 +20,6 @@ dependencies:
   path_provider: ^2.1.6
   http: ^1.6.0
   crypto: ^3.0.7
-  rive: ^0.14.11
   qr_flutter: ^4.1.0
 
 dev_dependencies:
