@@ -1,7 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
-import 'package:rive/rive.dart' as rive;
 
 import 'screens/splash_screen.dart';
 import 'services/audio_handler.dart';
@@ -16,10 +15,6 @@ late final MusicAudioHandler audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  try {
-    await rive.RiveNative.init();
-  } catch (_) {}
 
   try {
     final session = await AudioSession.instance;
