@@ -8,6 +8,7 @@ import '../services/download_service.dart';
 import '../services/library_store.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dancing_sangeeta.dart';
+import '../widgets/interactive_transport_controls.dart';
 import 'dance_mode_screen.dart';
 
 class PlayerScreen extends StatelessWidget {
@@ -179,41 +180,9 @@ class PlayerScreen extends StatelessWidget {
                             state?.processingState ==
                                 AudioProcessingState.buffering;
 
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          iconSize: 40,
-                          onPressed: audioHandler.skipToPrevious,
-                          icon: const Icon(Icons.skip_previous_rounded),
-                        ),
-                        const SizedBox(width: 18),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            shape: const CircleBorder(),
-                            backgroundColor: AppTheme.gold,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.all(22),
-                          ),
-                          onPressed: loading
-                              ? null
-                              : playing
-                                  ? audioHandler.pause
-                                  : audioHandler.play,
-                          child: Icon(
-                            playing
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            size: 38,
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        IconButton(
-                          iconSize: 40,
-                          onPressed: audioHandler.skipToNext,
-                          icon: const Icon(Icons.skip_next_rounded),
-                        ),
-                      ],
+                    return IgnorePointer(
+                      ignoring: loading,
+                      child: const InteractiveTransportControls(),
                     );
                   },
                 ),
