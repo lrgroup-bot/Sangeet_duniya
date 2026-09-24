@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../models/avatar_outfit.dart';
 import 'sangeeta_avatar.dart';
+import 'sangeeta_reference_avatar.dart';
 
-/// Local-only avatar stage. No remote avatar file, cloud runtime,
-/// or network animation source is used.
 class RiveAvatarStage extends StatelessWidget {
   const RiveAvatarStage({
     required this.outfit,
@@ -19,10 +18,21 @@ class RiveAvatarStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SangeetaAvatar(
+    final reference = SangeetaReferenceAvatar(
       outfit: outfit,
-      pose: pose,
-      size: size,
+      width: size * .78,
+      height: size,
+      speaking: pose == SangeetaPose.speaking,
+      dancing: pose == SangeetaPose.dance,
+      seated: pose == SangeetaPose.sit,
+    );
+
+    return Center(
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 220),
+        scale: pose == SangeetaPose.speaking ? 1.02 : 1,
+        child: reference,
+      ),
     );
   }
 }
