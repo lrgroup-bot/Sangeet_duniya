@@ -62,7 +62,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self,fmt,*args): print('[LRS-PC]',fmt%args)
     @property
     def store(self): return self.server.store
-    def path(self): return urlparse(self.path_raw).path or '/'
+    def request_path(self): return urlparse(self.path_raw).path or '/'
     def key(self): return parse_qs(urlparse(self.path_raw).query).get('key',[''])[0]
     def json(self,status,payload):
         data=b'' if payload is None else json.dumps(payload).encode()
@@ -75,7 +75,7 @@ class Handler(BaseHTTPRequestHandler):
     def admin_ok(self): return equal(self.key(),self.store.admin_key)
     def do_OPTIONS(self): self.path_raw=self.path; self.json(204,None)
     def do_GET(self):
-        self.path_raw=self.path; p=self.path()
+        self.path_raw=self.path; p=self.request_path()
         if p=='/health': return self.json(200,{'ok':True,'app':APP,'server':'PC'})
         if p=='/connect':
             if not self.user_ok(): return self.json(401,{'ok':False,'error':'User key required.'})
@@ -88,7 +88,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.json(200,{'ok':True,'users':len(self.store.get_users()),'tokens':len(self.store.get_tokens())})
         return self.json(404,{'ok':False,'error':'Not found.'})
     def do_POST(self):
-        self.path_raw=self.path; p=self.path(); body=self.read()
+        self.path_raw=self.path; p=self.request_path(); body=self.read()
         if p=='/tokens':
             if not self.admin_ok(): return self.json(401,{'ok':False,'error':'Admin key required.'})
             raw=(body or {}).get('tokens',[])
