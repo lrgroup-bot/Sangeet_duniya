@@ -13,6 +13,8 @@ import '../services/library_store.dart';
 import '../theme/app_theme.dart';
 import '../widgets/interactive_transport_controls.dart';
 import 'dance_mode_screen.dart';
+import 'artist_screen.dart';
+import 'lyrics_screen.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import 'equalizer_screen.dart';
@@ -90,7 +92,28 @@ class PlayerScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(item.title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                Text(item.artist ?? 'Unknown artist', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: .65), fontSize: 16)),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ArtistScreen(
+                        artistName: item.artist ?? 'Unknown artist',
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      item.artist ?? 'Unknown artist',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppTheme.gold2.withValues(alpha: .88),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   (item.extras?['source']?.toString() ?? 'Local') + ' • ' + (item.extras?['quality']?.toString() ?? 'Source quality'),
@@ -140,7 +163,21 @@ class PlayerScreen extends StatelessWidget {
                 Wrap(
                   alignment: WrapAlignment.center, spacing: 12, runSpacing: 12,
                   children: [
-                    _PlayerAction(icon: Icons.lyrics_rounded, label: 'Lyrics', onTap: () => _showLyrics(context, song, item.title)),
+                    _PlayerAction(
+                      icon: Icons.lyrics_rounded,
+                      label: 'Lyrics',
+                      onTap: () {
+                        if (song == null) {
+                          _showLyrics(context, song, item.title);
+                          return;
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => LyricsScreen(song: song),
+                          ),
+                        );
+                      },
+                    ),
                     _PlayerAction(
                       icon: libraryStore.isDownloaded(item.id) ? Icons.download_done_rounded : Icons.download_rounded,
                       label: libraryStore.isDownloaded(item.id) ? 'Offline' : (song?.isDownloadable == false ? 'Stream only' : 'Download'),
