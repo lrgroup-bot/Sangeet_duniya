@@ -81,22 +81,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Sangeeta language',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: sangeetaService.languageCode,
-                decoration: const InputDecoration(labelText: 'Voice language'),
-                items: const [
-                  DropdownMenuItem(value: 'or-IN', child: Text('Odia')),
-                  DropdownMenuItem(value: 'hi-IN', child: Text('Hindi')),
-                  DropdownMenuItem(value: 'en-IN', child: Text('English')),
-                ],
-                onChanged: (value) {
-                  if (value != null) sangeetaService.setLanguage(value);
-                },
+              const ListTile(
+                leading: Icon(Icons.language_rounded, color: AppTheme.gold),
+                title: Text('Sangeeta voice language'),
+                subtitle: Text('Odia only • wake and replies stay in Odia'),
               ),
               SwitchListTile(
                 title: const Text('Foreground wake mode'),
@@ -130,6 +118,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (value) {
                   if (value != null) avatarProfileService.setOutfit(value);
                 },
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<AvatarOutfit>(
+                initialValue: avatarProfileService.defaultOutfit,
+                decoration: const InputDecoration(
+                  labelText: 'Default dressed avatar',
+                ),
+                items: AvatarOutfit.values
+                    .map(
+                      (outfit) => DropdownMenuItem(
+                        value: outfit,
+                        child: Text(outfit.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    avatarProfileService.setDefaultOutfit(value);
+                  }
+                },
+              ),
+              SwitchListTile.adaptive(
+                title: const Text('Auto change outfit by song mood'),
+                subtitle: const Text(
+                  'Use the song category to select a saved mood outfit automatically.',
+                ),
+                value: avatarProfileService.autoMood,
+                onChanged: avatarProfileService.setAutoMood,
               ),
               const SizedBox(height: 14),
               Center(
