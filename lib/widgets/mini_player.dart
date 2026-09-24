@@ -2,7 +2,11 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../models/avatar_outfit.dart';
+import '../services/avatar_profile_service.dart';
 import '../screens/player_screen.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
@@ -13,9 +17,7 @@ class MiniPlayer extends StatelessWidget {
       stream: audioHandler.mediaItem,
       builder: (context, snapshot) {
         final item = snapshot.data;
-        if (item == null) {
-          return const SizedBox.shrink();
-        }
+        if (item == null) return const SizedBox.shrink();
 
         return Material(
           color: const Color(0xFF151515),
@@ -28,9 +30,26 @@ class MiniPlayer extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
                 child: Row(
                   children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ListenableBuilder(
+                        listenable: avatarProfileService,
+                        builder: (context, _) => RiveAvatarStage(
+                          outfit: avatarProfileService.outfit,
+                          pose: (audioHandler.playbackState.value.playing)
+                              ? SangeetaPose.dance
+                              : SangeetaPose.sit,
+                          size: 48,
+                          riveUrl: avatarProfileService.riveUrl,
+                          stateMachine: avatarProfileService.riveStateMachine,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
@@ -46,7 +65,7 @@ class MiniPlayer extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
