@@ -344,7 +344,7 @@ class LocalLanService extends ChangeNotifier {
       final key = keyBody['key']?.toString() ?? '';
       if (key.isEmpty) return null;
 
-      return _activateAgainstBase(
+      return await _activateAgainstBase(
         base,
         key: key,
         name: name,
