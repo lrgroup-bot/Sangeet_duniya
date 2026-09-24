@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import '../widgets/sangeeta_logo.dart';
+import 'admin_dashboard_screen.dart';
 import 'license_admin_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -224,6 +225,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 6),
+              if (authProvider.isOwner)
+                ListTile(
+                  leading: const Icon(
+                    Icons.dashboard_rounded,
+                    color: AppTheme.gold,
+                  ),
+                  title: const Text('Admin Dashboard'),
+                  subtitle: const Text(
+                    'Users, active tokens, expiry days and free distribution QR',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminDashboardScreen(),
+                    ),
+                  ),
+                ),
               if (authProvider.isOwner)
                 ListTile(
                   leading: const Icon(Icons.key_rounded, color: AppTheme.gold),
