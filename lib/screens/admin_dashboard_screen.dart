@@ -178,13 +178,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   String _shareText(ActivationTokenRecord r) {
-    return "LR's Sangeet_Duniya Activation\n\n" +
-        'Hello ' + r.customerName + ',\n\n' +
-        'Activation Token: ' + r.token + '\n' +
-        'Mobile: ' + r.phoneNumber + '\n' +
-        'Validity: ' + r.plan.label + '\n' +
-        'Valid until: ' + _time(r.expiresAt) + '\n\n' +
-        'Enter your name, phone number and this 6-digit token in the app.';
+    return """LR's Sangeet_Duniya Activation
+
+Hello ${r.customerName},
+
+Activation Token: ${r.token}
+Mobile: ${r.phoneNumber}
+Validity: ${r.plan.label}
+Valid until: ${_time(r.expiresAt)}
+
+Enter your name, phone number and this 6-digit token in the app.""".trim();
   }
 
   Future<void> _copy(ActivationTokenRecord r) async {
@@ -242,7 +245,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(height: 14),
             AnimatedBuilder(
               animation: Listenable.merge([localLanService, userRegistry]),
-              builder: (_, __) => _Stats(
+              builder: (_, _) => _Stats(
                 pending: localLanService.pendingRequests.length,
                 customers: userRegistry.totalCount,
                 active: userRegistry.activeCount,
@@ -254,7 +257,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             const SizedBox(height: 8),
             AnimatedBuilder(
               animation: localLanService,
-              builder: (_, __) {
+              builder: (_, _) {
                 final requests = localLanService.pendingRequests;
                 if (requests.isEmpty) {
                   return const _Empty(
@@ -376,7 +379,7 @@ class _Hero extends StatelessWidget {
         children: [
           ListenableBuilder(
             listenable: avatarProfileService,
-            builder: (_, __) => RiveAvatarStage(
+            builder: (_, _) => RiveAvatarStage(
               outfit: avatarProfileService.outfit,
               pose: SangeetaPose.listening,
               size: 105,
@@ -647,7 +650,7 @@ class _Generator extends StatelessWidget {
             ),
             const SizedBox(height: 9),
             DropdownButtonFormField<LicensePlan>(
-              value: plan,
+              initialValue: plan,
               decoration: const InputDecoration(labelText: 'Validity', prefixIcon: Icon(Icons.schedule_rounded)),
               items: LicensePlan.values
                   .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
