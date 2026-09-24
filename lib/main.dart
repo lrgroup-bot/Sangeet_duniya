@@ -8,6 +8,8 @@ import 'services/audio_handler.dart';
 import 'services/avatar_profile_service.dart';
 import 'services/auth_provider.dart';
 import 'services/library_store.dart';
+import 'services/distribution_service.dart';
+import 'services/user_registry_service.dart';
 import 'theme/app_theme.dart';
 
 late final MusicAudioHandler audioHandler;
@@ -55,6 +57,8 @@ Future<void> main() async {
 
   await libraryStore.load();
   await avatarProfileService.load();
+  await userRegistry.load();
+  await distributionService.load();
   await authProvider.initialize();
 
   runApp(const SangeetDuniyaApp());
