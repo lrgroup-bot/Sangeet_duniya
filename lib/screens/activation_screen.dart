@@ -46,32 +46,19 @@ class _ActivationScreenState extends State<ActivationScreen> {
       setState(() => error = 'Enter your name, phone number and token.');
       return;
     }
-    if (adminLink.isEmpty) {
-      setState(() => error = 'Enter the Admin Wi-Fi Link from the owner phone.');
-      return;
-    }
-
     setState(() {
       busy = true;
       error = null;
     });
 
-    final registered = await localLanService.registerUser(
-      adminLink: adminLink,
-      name: name,
-      phoneNumber: phone,
-      token: token,
-    );
-
-    if (!mounted) return;
-
-    if (!registered) {
-      setState(() {
-        busy = false;
-        error =
-            'Admin phone not reachable or token rejected. Put both phones on the same Wi-Fi and check the Admin Wi-Fi Link.';
-      });
-      return;
+    var registered = false;
+    if (adminLink.isNotEmpty) {
+      registered = await localLanService.registerUser(
+        adminLink: adminLink,
+        name: name,
+        phoneNumber: phone,
+        token: token,
+      );
     }
 
     final ok = await authProvider.activateWithToken(
@@ -85,7 +72,13 @@ class _ActivationScreenState extends State<ActivationScreen> {
     setState(() => busy = false);
 
     if (!ok) {
-      setState(() => error = 'Token validation failed or the token has expired.');
+      setState(() {
+        error = adminLink.isEmpty
+            ? 'Token validation failed or the token has expired.'
+            : registered
+                ? 'Token validation failed or the token has expired.'
+                : 'Could not contact the admin phone. You can still use this token when the admin has manually added you.';
+      });
     }
   }
 
@@ -187,7 +180,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Both phones must be connected to the same Wi-Fi network.',
+                            'Optional: same Wi-Fi lets this signup appear automatically on the admin dashboard. If you are not on Wi-Fi, the admin can add you manually against the token.',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: .60),
                               fontSize: 12,
