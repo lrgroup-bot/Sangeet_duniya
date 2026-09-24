@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../widgets/mini_player.dart';
 import 'home_screen.dart';
 import 'library_screen.dart';
-import 'sangeeta_preview_screen.dart';
+import 'sangeeta_screen.dart';
 import 'search_screen.dart';
 
 class ShellScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _ShellScreenState extends State<ShellScreen> {
     HomeScreen(),
     SearchScreen(),
     LibraryScreen(),
-    SangeetaPreviewScreen(),
+    SangeetaScreen(),
   ];
 
   @override
