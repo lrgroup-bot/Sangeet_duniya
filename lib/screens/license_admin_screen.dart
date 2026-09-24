@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import '../main.dart';
 import '../models/license_plan.dart';
 import '../theme/app_theme.dart';
+import '../services/license_service.dart';
+import '../services/user_registry_service.dart';
+import 'distribution_qr_screen.dart';
 
 class LicenseAdminScreen extends StatefulWidget {
   const LicenseAdminScreen({super.key});
@@ -13,28 +16,55 @@ class LicenseAdminScreen extends StatefulWidget {
 }
 
 class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
+  final nameController = TextEditingController();
   final phoneController = TextEditingController();
+
   LicensePlan plan = LicensePlan.oneYear;
   String token = '';
 
   @override
   void dispose() {
+    nameController.dispose();
     phoneController.dispose();
     super.dispose();
   }
 
   Future<void> generate() async {
+    final name = nameController.text.trim();
+    final phone = phoneController.text.trim();
+
+    if (name.isEmpty || phone.length < 7) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter recipient name and phone number.')),
+      );
+      return;
+    }
+
     final value = await authProvider.generateToken(
       plan,
-      phoneNumber: phoneController.text,
+      phoneNumber: phone,
     );
     if (!mounted) return;
+
     if (value == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Owner mode is required.')),
       );
       return;
     }
+
+    final info = LicenseService.instance.validateToken(value);
+    if (info != null) {
+      await userRegistry.saveUser(
+        name: name,
+        phoneNumber: phone,
+        planCode: info.plan.name,
+        issuedAt: info.issuedAt,
+        expiresAt: info.expiresAt,
+        token: info.token,
+      );
+    }
+
     setState(() => token = value);
   }
 
@@ -50,7 +80,7 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('License Manager')),
+      appBar: AppBar(title: const Text('Token Generator')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -61,17 +91,25 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Generate activation token',
-                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add the recipient phone number, choose validity, then share the token.',
+                    'Create free access token',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: .68),
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Validity controls access duration only. No payment or billing is collected.',
+                  ),
                   const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Recipient name',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
@@ -83,7 +121,9 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<LicensePlan>(
                     initialValue: plan,
-                    decoration: const InputDecoration(labelText: 'Validity'),
+                    decoration: const InputDecoration(
+                      labelText: 'Access validity',
+                    ),
                     items: LicensePlan.values
                         .map(
                           (item) => DropdownMenuItem(
@@ -96,14 +136,6 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
                       if (value != null) setState(() => plan = value);
                     },
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    '365 Days: ₹100 / year',
-                    style: TextStyle(
-                      color: AppTheme.gold2,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -111,6 +143,19 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
                       onPressed: generate,
                       icon: const Icon(Icons.key_rounded),
                       label: const Text('Generate token'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const DistributionQrScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.qr_code_2_rounded),
+                      label: const Text('Open download QR'),
                     ),
                   ),
                 ],
@@ -155,6 +200,14 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
             ),
           ],
           const SizedBox(height: 18),
+          const Text(
+            'Access periods',
+            style: TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
           for (final item in LicensePlan.values)
             ListTile(
               leading: const Icon(
@@ -162,11 +215,7 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
                 color: AppTheme.gold,
               ),
               title: Text(item.label),
-              subtitle: Text(
-                item == LicensePlan.oneYear
-                    ? 'Private-use annual option • ₹100'
-                    : 'Token validity: ' + item.label,
-              ),
+              subtitle: const Text('Free private access period'),
             ),
         ],
       ),
