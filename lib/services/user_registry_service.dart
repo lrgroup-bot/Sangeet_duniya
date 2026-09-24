@@ -69,6 +69,14 @@ class UserRegistryService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> replaceUsers(List<RegisteredUser> users) async {
+    _users
+      ..clear()
+      ..addAll(users);
+    await _persist();
+    notifyListeners();
+  }
+
   Future<void> removeUser(String id) async {
     _users.removeWhere((u) => u.id == id);
     await _persist();
