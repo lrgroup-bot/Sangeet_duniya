@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
@@ -14,15 +16,27 @@ Future<void> main() async {
   final session = await AudioSession.instance;
   await session.configure(const AudioSessionConfiguration.music());
 
-  audioHandler = await AudioService.init(
-    builder: MusicAudioHandler.new,
-    config: AudioServiceConfig(
-      androidNotificationChannelId: 'com.lrs.sangeet_duniya.audio',
-      androidNotificationChannelName: "LR's Sangeet_Duniya",
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: false,
-    ),
-  );
+  try {
+    audioHandler = await AudioService.init(
+      builder: MusicAudioHandler.new,
+      config: AudioServiceConfig(
+        androidNotificationChannelId: 'com.lrs.sangeet_duniya.audio',
+        androidNotificationChannelName: "LR's Sangeet_Duniya",
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: false,
+      ),
+    );
+  } catch (error, stackTrace) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'audio_service startup',
+        context: ErrorDescription('initializing background audio'),
+      ),
+    );
+    audioHandler = MusicAudioHandler();
+  }
 
   runApp(const SangeetDuniyaApp());
 }
