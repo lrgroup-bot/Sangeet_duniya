@@ -115,7 +115,8 @@ class LicenseService {
   static const _productSecret = 'LRS_SANGEET_DUNIYA_PRIVATE_2026';
   // SHA-256 of the administrator phone number; the raw number is not stored in source.
   static const ownerPhoneHash = '125fbbd0711ddd5be878895e6555067824714a88290b3c1ba4eca4af78bf627a';
-  static const ownerPin = '333000';
+  // SHA-256 of the 6-digit owner PIN. Raw PIN is never stored in source.
+  static const _ownerPinHash = '31f4e3ea3744ab8f435696d07a03bb6b36d179e06a68b7eaca146e5f6c036e3d';
   static const _issuedTokensKey = 'issued_tokens_v1';
   static const _issuedTokenRecordsKey = 'issued_token_records_v2';
   static const _activatedTokenRecordKey = 'activated_token_record_v1';
@@ -362,11 +363,13 @@ class LicenseService {
     _cachedActivatedRecord = await localActivatedRecord();
   }
 
-  bool verifyOwnerPin(String value) => value.trim() == ownerPin;
+  bool verifyOwnerPin(String value) =>
+      sha256.convert(utf8.encode(value.trim())).toString() == _ownerPinHash;
 
   bool verifyOwnerCredentials({required String phone, required String token}) {
     final phoneHash = sha256.convert(utf8.encode(phone.trim())).toString();
-    return phoneHash == ownerPhoneHash && token.trim() == ownerPin;
+    final tokenHash = sha256.convert(utf8.encode(token.trim())).toString();
+    return phoneHash == ownerPhoneHash && tokenHash == _ownerPinHash;
   }
 
   String _sign(String payload) {
