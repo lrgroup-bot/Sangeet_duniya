@@ -8,8 +8,6 @@ import '../models/song.dart';
 import '../services/auth_provider.dart';
 import '../services/library_store.dart';
 import '../services/music_catalog_service.dart';
-import '../widgets/sangeeta_logo.dart';
-import '../widgets/sangeeta_avatar.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
 import 'admin_dashboard_screen.dart';
