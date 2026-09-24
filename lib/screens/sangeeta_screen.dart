@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/sangeeta_personality.dart';
 import '../services/sangeeta_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/sangeeta_logo.dart';
