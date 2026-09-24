@@ -13,6 +13,13 @@ import 'dance_mode_screen.dart';
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({super.key});
 
+  Song? _songFor(String id) {
+    for (final song in demoSongs) {
+      if (song.id == id) return song;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +79,8 @@ class PlayerScreen extends StatelessWidget {
             }
 
             final category = item.extras?['category']?.toString() ?? 'Trending';
-            final showDancer = category == 'Party' || category == 'Romantic';
+            final showDancer =
+                category == 'Party' || category == 'Romantic';
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
@@ -125,10 +133,16 @@ class PlayerScreen extends StatelessWidget {
                     return StreamBuilder<Duration?>(
                       stream: audioHandler.durationStream,
                       builder: (context, durationSnapshot) {
-                        final position = positionSnapshot.data ?? Duration.zero;
-                        final duration = durationSnapshot.data ?? item.duration;
-                        final max = (duration?.inMilliseconds ?? 1).toDouble().clamp(1.0, double.infinity);
-                        final current = position.inMilliseconds.toDouble().clamp(0.0, max);
+                        final position =
+                            positionSnapshot.data ?? Duration.zero;
+                        final duration =
+                            durationSnapshot.data ?? item.duration;
+                        final rawMax =
+                            (duration?.inMilliseconds ?? 1).toDouble();
+                        final max = rawMax < 1 ? 1.0 : rawMax;
+                        final rawValue = position.inMilliseconds.toDouble();
+                        final current = rawValue.clamp(0.0, max);
+
                         return Column(
                           children: [
                             Slider(
@@ -140,7 +154,8 @@ class PlayerScreen extends StatelessWidget {
                               ),
                             ),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(_format(position)),
                                 Text(_format(duration ?? Duration.zero)),
@@ -158,8 +173,11 @@ class PlayerScreen extends StatelessWidget {
                   builder: (context, snapshot) {
                     final state = snapshot.data;
                     final playing = state?.playing ?? false;
-                    final loading = state?.processingState == AudioProcessingState.loading ||
-                        state?.processingState == AudioProcessingState.buffering;
+                    final loading =
+                        state?.processingState ==
+                                AudioProcessingState.loading ||
+                            state?.processingState ==
+                                AudioProcessingState.buffering;
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -183,7 +201,9 @@ class PlayerScreen extends StatelessWidget {
                                   ? audioHandler.pause
                                   : audioHandler.play,
                           child: Icon(
-                            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                            playing
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
                             size: 38,
                           ),
                         ),
@@ -210,7 +230,7 @@ class PlayerScreen extends StatelessWidget {
                           onTap: () {
                             showDialog<void>(
                               context: context,
-                              builder: (context) => AlertDialog(
+                              builder: (_) => AlertDialog(
                                 title: Text(item.title),
                                 content: SingleChildScrollView(
                                   child: Text(
@@ -236,20 +256,93 @@ class PlayerScreen extends StatelessWidget {
                           label: libraryStore.isDownloaded(item.id)
                               ? 'Offline'
                               : 'Download',
-                          onTap: () => _download(context, item),
+                          onTap: () => _download(context, song),
                         ),
                         _PlayerAction(
                           icon: Icons.auto_awesome_rounded,
                           label: 'Dance',
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  DanceModeScreen(category: category),
-                            ),
-                          ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => DanceModeScreen(
+                                  category: category,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     );
                   },
                 ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
+  Future<void> _download(BuildContext context, Song? song) async {
+    if (song == null) return;
+
+    if (libraryStore.isDownloaded(song.id)) {
+      await libraryStore.removeDownload(song);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Offline copy removed.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await DownloadService.instance.download(song);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved for offline playback.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $error')),
+        );
+      }
+    }
+  }
+
+  static String _format(Duration duration) {
+    final minutes =
+        duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds =
+        duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+}
+
+class _PlayerAction extends StatelessWidget {
+  const _PlayerAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        IconButton.filledTonal(
+          onPressed: onTap,
+          icon: Icon(icon),
+        ),
+        const SizedBox(height: 4),
+        Text(label),
+      ],
+    );
+  }
+}
