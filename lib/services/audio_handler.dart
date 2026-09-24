@@ -8,6 +8,7 @@ import '../data/demo_songs.dart';
 import '../models/equalizer_profile.dart';
 import '../models/song.dart';
 import 'equalizer_profile_service.dart';
+import 'avatar_profile_service.dart';
 import 'library_store.dart';
 
 class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -62,6 +63,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     if (duration != null) mediaItem.add(item.copyWith(duration: duration));
 
     await _applyRecommendedEq(song);
+    await avatarProfileService.setOutfit(avatarProfileService.outfitForSong(song));
     await libraryStore.recordPlayed(song);
     await _player.play();
   }
