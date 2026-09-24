@@ -23,15 +23,19 @@ class UserRegistryService extends ChangeNotifier {
     final values = prefs.getStringList(_key) ?? <String>[];
     _users
       ..clear()
-      ..addAll(values.map((raw) {
-        try {
-          return RegisteredUser.fromJson(
-            jsonDecode(raw) as Map<String, dynamic>,
-          );
-        } catch (_) {
-          return null;
-        }
-      }).whereType<RegisteredUser>());
+      ..addAll(
+        values
+            .map((raw) {
+              try {
+                return RegisteredUser.fromJson(
+                  jsonDecode(raw) as Map<String, dynamic>,
+                );
+              } catch (_) {
+                return null;
+              }
+            })
+            .whereType<RegisteredUser>(),
+      );
     notifyListeners();
   }
 
@@ -40,14 +44,18 @@ class UserRegistryService extends ChangeNotifier {
     required String phoneNumber,
     required String planCode,
     required DateTime issuedAt,
+    DateTime? activatedAt,
     required DateTime? expiresAt,
     required String token,
   }) async {
     final phone = phoneNumber.trim();
     final index = _users.indexWhere((u) => u.phoneNumber == phone);
+
     final id = index >= 0
         ? _users[index].id
         : DateTime.now().microsecondsSinceEpoch.toString();
+
+    final activationTime = activatedAt ?? DateTime.now().toUtc();
 
     final user = RegisteredUser(
       id: id,
@@ -55,6 +63,7 @@ class UserRegistryService extends ChangeNotifier {
       phoneNumber: phone,
       planCode: planCode,
       issuedAt: issuedAt,
+      activatedAt: activationTime,
       expiresAt: expiresAt,
       token: token.trim(),
     );
