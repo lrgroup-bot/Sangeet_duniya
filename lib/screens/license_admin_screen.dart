@@ -5,7 +5,6 @@ import '../main.dart';
 import '../models/license_plan.dart';
 import '../theme/app_theme.dart';
 import '../services/license_service.dart';
-import '../services/user_registry_service.dart';
 import 'distribution_qr_screen.dart';
 
 class LicenseAdminScreen extends StatefulWidget {
@@ -51,18 +50,6 @@ class _LicenseAdminScreenState extends State<LicenseAdminScreen> {
         const SnackBar(content: Text('Owner mode is required.')),
       );
       return;
-    }
-
-    final info = LicenseService.instance.validateToken(value);
-    if (info != null) {
-      await userRegistry.saveUser(
-        name: name,
-        phoneNumber: phone,
-        planCode: info.plan.name,
-        issuedAt: info.issuedAt,
-        expiresAt: info.expiresAt,
-        token: info.token,
-      );
     }
 
     setState(() => token = value);
