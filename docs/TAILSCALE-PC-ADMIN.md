@@ -53,9 +53,9 @@ This prints:
 
 ### Logs
 
-    C:\ProgramData\LRS-Sangeet-Duniya\watchdog.log
-    C:\ProgramData\LRS-Sangeet-Duniya\server.stdout.log
-    C:\ProgramData\LRS-Sangeet-Duniya\server.stderr.log
+    E:\LRS-Sangeet-Duniya\watchdog.log
+    E:\LRS-Sangeet-Duniya\server.stdout.log
+    E:\LRS-Sangeet-Duniya\server.stderr.log
 
 ### Disable or remove auto-start
 
