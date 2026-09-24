@@ -364,7 +364,9 @@ class _SangeetaAvatarPainter extends CustomPainter {
       Paint()..color = skinShadow.withValues(alpha: .16),
     );
 
-    // Brows, almond eyes, pupils.
+    // Brows, almond eyes, pupils with a small periodic blink so Sangeeta feels alive.
+    final blinkWave = math.sin(phase * math.pi * 2);
+    final blinking = blinkWave > .94;
     final features = Paint()
       ..color = eye
       ..style = PaintingStyle.stroke
@@ -373,22 +375,40 @@ class _SangeetaAvatarPainter extends CustomPainter {
     canvas.drawArc(Rect.fromLTWH(s * .405, s * .245, s * .075, s * .035), math.pi, math.pi, false, features);
     canvas.drawArc(Rect.fromLTWH(s * .520, s * .245, s * .075, s * .035), math.pi, math.pi, false, features);
 
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(s * .45, s * .30), width: s * .065, height: s * .034),
-      Paint()..color = Colors.white,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(s * .55, s * .30), width: s * .065, height: s * .034),
-      Paint()..color = Colors.white,
-    );
-    canvas.drawCircle(Offset(s * .45, s * .30), s * .014, Paint()..color = eye);
-    canvas.drawCircle(Offset(s * .55, s * .30), s * .014, Paint()..color = eye);
+    if (blinking) {
+      canvas.drawLine(
+        Offset(s * .415, s * .30),
+        Offset(s * .485, s * .30),
+        features,
+      );
+      canvas.drawLine(
+        Offset(s * .515, s * .30),
+        Offset(s * .585, s * .30),
+        features,
+      );
+    } else {
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(s * .45, s * .30), width: s * .065, height: s * .034),
+        Paint()..color = Colors.white,
+      );
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(s * .55, s * .30), width: s * .065, height: s * .034),
+        Paint()..color = Colors.white,
+      );
+      canvas.drawCircle(Offset(s * .45, s * .30), s * .014, Paint()..color = eye);
+      canvas.drawCircle(Offset(s * .55, s * .30), s * .014, Paint()..color = eye);
+    }
 
     // Nose and soft smile / speaking mouth.
     canvas.drawLine(Offset(c, s * .31), Offset(c - s * .008, s * .355), features);
     if (pose == SangeetaPose.speaking) {
+      final talking = math.sin(phase * math.pi * 8) > 0;
       canvas.drawOval(
-        Rect.fromCenter(center: Offset(c, s * .385), width: s * .075, height: s * .042),
+        Rect.fromCenter(
+          center: Offset(c, s * .385),
+          width: s * .075,
+          height: talking ? s * .042 : s * .022,
+        ),
         Paint()..color = lip,
       );
     } else {
