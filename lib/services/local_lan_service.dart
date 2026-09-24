@@ -98,7 +98,7 @@ class LocalLanService extends ChangeNotifier {
 
   String get connectionLink {
     final host = _localIpv4.isNotEmpty ? _localIpv4.first : '127.0.0.1';
-    return 'http://$host:$port/connect?key=\${Uri.encodeQueryComponent(_accessKey)}';
+    return 'http://' + host + ':' + port.toString() + '/connect?key=' +
   }
 
   Future<bool> registerUser({
