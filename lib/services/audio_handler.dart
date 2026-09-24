@@ -133,7 +133,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToPrevious() async {
     if (_queue.isEmpty) _queue.addAll(demoSongs);
     _currentIndex = (_currentIndex - 1 + _queue.length) % _queue.length;
-    await playSong(_queue[_currentIndex], queue: _queue);
+    await playSong(_queue[_currentIndex], songs: _queue);
   }
 
   void _broadcastState(PlaybackEvent event) {

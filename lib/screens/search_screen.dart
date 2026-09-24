@@ -61,7 +61,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: SongCard(
               song: song,
               onTap: () async {
-                await audioHandler.playSong(song, queue: _songs);
+                await audioHandler.playSong(song, songs: _songs);
                 if (!context.mounted) return;
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen()));
               },

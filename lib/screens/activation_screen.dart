@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
 import '../services/auth_provider.dart';
 import '../services/local_lan_service.dart';
 import '../theme/app_theme.dart';
@@ -36,7 +35,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
     super.dispose();
   }
 
-  Future<void> activate() async {
+  Future<void> _submitActivation() async {
     FocusScope.of(context).unfocus();
     final name = nameController.text.trim();
     final phone = phoneController.text.trim();
@@ -209,7 +208,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton.icon(
-                              onPressed: busy ? null : activate,
+                              onPressed: busy ? null : _submitActivation,
                               icon: const Icon(Icons.person_add_alt_1_rounded),
                               label: Text(
                                 busy ? 'Signing up…' : 'Sign up & enter app',

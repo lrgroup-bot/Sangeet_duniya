@@ -168,8 +168,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     super.dispose();
   }
 
-  String _daysLabel(RegisteredUser user) => _remainingLabel(user);
-
   Color _statusColor(RegisteredUser user) {
     if (!user.isActive) return Colors.redAccent;
     if (!user.isLifetime && user.daysLeft <= 7) return Colors.orangeAccent;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
 import '../services/auth_provider.dart';
 import 'activation_screen.dart';
 import 'shell_screen.dart';

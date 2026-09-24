@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: SongCard(
                         song: song,
                         onTap: () async {
-                          await audioHandler.playSong(song, queue: songs);
+                          await audioHandler.playSong(song, songs: songs);
                           if (!context.mounted) return;
                           Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen()));
                         },

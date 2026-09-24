@@ -195,7 +195,7 @@ class SangeetaService extends ChangeNotifier {
       final found = await _findSong(query);
       if (found != null) {
         final song = found.$1;
-        await audioHandler.playSong(song, queue: found.$2);
+        await audioHandler.playSong(song, songs: found.$2);
         await _speak(_replyFor(
           'ହଁ ଜାନ୍… "' +
               song.title +
