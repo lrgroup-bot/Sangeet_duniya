@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../models/sangeeta_personality.dart';
 import '../services/avatar_profile_service.dart';
 import '../services/sangeeta_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
-import '../theme/app_theme.dart';
-import '../widgets/sangeeta_logo.dart';
 import 'settings_screen.dart';
 
 class SangeetaScreen extends StatefulWidget {
@@ -17,29 +15,13 @@ class SangeetaScreen extends StatefulWidget {
 }
 
 class _SangeetaScreenState extends State<SangeetaScreen> {
-  final _controller = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     sangeetaService.init().then((_) {
-      if (mounted && sangeetaService.continuousWakeMode) {
-        sangeetaService.startListening();
-      }
+      if (!mounted || !sangeetaService.continuousWakeMode) return;
+      sangeetaService.startListening();
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _send() async {
-    final value = _controller.text.trim();
-    if (value.isEmpty) return;
-    _controller.clear();
-    await sangeetaService.handleText(value);
   }
 
   @override
@@ -49,7 +31,7 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
         title: const Text('Sangeeta'),
         actions: [
           IconButton(
-            tooltip: 'Settings',
+            tooltip: 'Avatar & voice settings',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const SettingsScreen(),
@@ -62,184 +44,132 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
       body: AnimatedBuilder(
         animation: sangeetaService,
         builder: (context, _) {
+          final pose = sangeetaService.isListening
+              ? SangeetaPose.listening
+              : sangeetaService.isSpeaking
+                  ? SangeetaPose.speaking
+                  : SangeetaPose.greeting;
+
           return SafeArea(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
               children: [
-                const Center(
-                  child: SangeetaLogo(size: 185, showTagline: false),
+                const Text(
+                  'SANGEETA • VOICE COMPANION',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTheme.gold,
+                    letterSpacing: 2.2,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                const SizedBox(height: 6),
-                Center(
-                  child: Text(
-                    sangeetaService.personality.label + ' Mode',
-                    style: const TextStyle(
-                      color: AppTheme.gold2,
-                      fontWeight: FontWeight.w900,
+                const SizedBox(height: 8),
+                const Text(
+                  'No chat box. Just speak naturally.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                ListenableBuilder(
+                  listenable: avatarProfileService,
+                  builder: (context, _) => Container(
+                    height: 430,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(34),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0xFF261A08), Color(0xFF080807)],
+                      ),
+                      border: Border.all(
+                        color: AppTheme.gold.withValues(alpha: .55),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.gold.withValues(alpha: .12),
+                          blurRadius: 32,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.bottomCenter,
+                    child: RiveAvatarStage(
+                      outfit: avatarProfileService.outfit,
+                      pose: pose,
+                      size: 360,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                ListenableBuilder(
-                  listenable: avatarProfileService,
-                  builder: (context, _) {
-                    final pose = sangeetaService.isListening
-                        ? SangeetaPose.listening
-                        : sangeetaService.isSpeaking
-                            ? SangeetaPose.speaking
-                            : SangeetaPose.greeting;
-                    return Container(
-                      height: 255,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        gradient: const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0xFF241507), Color(0xFF090807)],
-                        ),
-                        border: Border.all(
-                          color: AppTheme.gold.withValues(alpha: .45),
-                        ),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.bottomCenter,
-                        children: [
-                          RiveAvatarStage(
-                            outfit: avatarProfileService.outfit,
-                            pose: pose,
-                            size: 230,
-                          ),
-                          Positioned(
-                            left: 18,
-                            bottom: 14,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: .55),
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                child: Text(
-                                  sangeetaService.isListening
-                                      ? 'Sangeeta is listening…'
-                                      : sangeetaService.isSpeaking
-                                          ? 'Sangeeta is speaking…'
-                                          : 'Sangeeta • Sweetheart',
-                                  style: const TextStyle(
-                                    color: AppTheme.gold2,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                const SizedBox(height: 18),
+                Text(
+                  sangeetaService.isListening
+                      ? 'I am listening…'
+                      : sangeetaService.isSpeaking
+                          ? 'I am speaking…'
+                          : 'Say “Hey Sangeeta”',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppTheme.gold2,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Card(
+                const SizedBox(height: 12),
+                const Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(18),
+                    padding: EdgeInsets.all(16),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Wake phrases',
                           style: TextStyle(
-                            fontSize: 18,
+                            color: AppTheme.gold,
+                            fontSize: 17,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Hey Sangeeta • Hi Sangeeta • Hello Sangeeta\n'
-                          'Hey Sweetheart • Hi Baby • Hello Darling',
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(
-                              sangeetaService.isListening
-                                  ? Icons.mic_rounded
-                                  : Icons.mic_off_rounded,
-                              color: sangeetaService.isListening
-                                  ? AppTheme.gold
-                                  : Colors.white54,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                sangeetaService.isListening
-                                    ? 'Listening in foreground…'
-                                    : 'Tap the microphone to listen.',
-                                style: TextStyle(
-                                  color: sangeetaService.isListening
-                                      ? AppTheme.gold
-                                      : Colors.white70,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
+                        SizedBox(height: 8),
+                        Text(
+                          'Hey Sangeeta  •  Hi Sangeeta  •  Hey Dhana\n'
+                          'Sweetheart  •  Hey Sweetheart',
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                if (sangeetaService.transcript.isNotEmpty)
-                  _Bubble(title: 'You', text: sangeetaService.transcript),
-                const SizedBox(height: 10),
-                _Bubble(title: 'Sangeeta', text: sangeetaService.reply),
                 const SizedBox(height: 18),
-                TextField(
-                  controller: _controller,
-                  onSubmitted: (_) => _send(),
-                  decoration: InputDecoration(
-                    hintText: 'Ask Sangeeta to play a song…',
-                    suffixIcon: IconButton(
-                      tooltip: 'Send',
-                      onPressed: _send,
-                      icon: const Icon(Icons.send_rounded),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
                 Center(
                   child: IconButton.filled(
                     style: IconButton.styleFrom(
-                      backgroundColor: AppTheme.gold,
+                      backgroundColor: sangeetaService.isListening
+                          ? AppTheme.gold2
+                          : AppTheme.gold,
                       foregroundColor: Colors.black,
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(22),
                     ),
-                    onPressed: () {
-                      sangeetaService.setWakeMode(
-                        !sangeetaService.continuousWakeMode,
-                      );
-                    },
+                    onPressed: () => sangeetaService.setWakeMode(
+                      !sangeetaService.continuousWakeMode,
+                    ),
                     icon: Icon(
                       sangeetaService.isListening
                           ? Icons.mic_rounded
                           : Icons.mic_none_rounded,
-                      size: 34,
+                      size: 38,
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Center(
                   child: Text(
                     sangeetaService.continuousWakeMode
-                        ? 'Wake mode ON'
-                        : 'Wake mode OFF',
+                        ? 'Voice wake mode ON'
+                        : 'Voice wake mode OFF',
                     style: TextStyle(
                       color: sangeetaService.continuousWakeMode
                           ? AppTheme.gold
                           : Colors.white54,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
@@ -247,37 +177,6 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _Bubble extends StatelessWidget {
-  const _Bubble({required this.title, required this.text});
-
-  final String title;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: const Color(0xFF151515),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: AppTheme.gold,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(text),
-          ],
-        ),
       ),
     );
   }
