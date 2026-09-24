@@ -29,16 +29,16 @@ Target features:
 
 ### Phase 1 acceptance tests
 
-- [ ] flutter analyze passes.
-- [ ] flutter test passes.
-- [ ] Android debug APK builds successfully.
+- [x] flutter analyze passes.
+- [x] flutter test passes.
+- [x] Android debug APK builds successfully.
 - [ ] App launches without a crash.
 - [ ] Demo track can play and pause.
 - [ ] Playback continues when the app is minimized.
 - [ ] Android notification controls work.
 - [ ] Lock-screen media controls work.
 
-Phase 1 is not marked complete until the relevant tests above pass.
+Automated Phase 1 checks passed on GitHub Actions. Phase 1 remains open until the APK is installed and background playback, notification controls, and lock-screen controls are verified on a real Android device.
 
 ## Phase 2 — Sangeeta
 
@@ -142,3 +142,8 @@ The CI workflow can generate the Android platform files when needed and then bui
 ## License
 
 MIT — see LICENSE.
+
+
+## Latest verification
+
+GitHub Actions run 6 passed flutter analyze, flutter test, Android debug APK build, and APK artifact upload. The generated debug APK is available from the build artifact. Real-device runtime checks are still required before Phase 1 is marked COMPLETED.
