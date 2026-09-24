@@ -72,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            'Your music companion is coming.',
+                            'Your music companion is here.',
                             style: TextStyle(
                               fontSize: 24,
                               height: 1.1,
@@ -81,7 +81,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
                           Text(
-                            'Phase 1 foundation is ready for playback testing.',
+                            'Voice, Dance Mode and local library features are now wired in.',
                           ),
                         ],
                       ),
