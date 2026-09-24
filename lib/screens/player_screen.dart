@@ -84,11 +84,10 @@ class PlayerScreen extends StatelessWidget {
                       builder: (context, durationSnapshot) {
                         final position = positionSnapshot.data ?? Duration.zero;
                         final duration = durationSnapshot.data ?? item.duration;
-                        final maxSeconds =
-                            (duration?.inMilliseconds ?? 1).toDouble().clamp(1, double.infinity);
-                        final value = position.inMilliseconds
-                            .toDouble()
-                            .clamp(0, maxSeconds);
+                        final rawMax = (duration?.inMilliseconds ?? 1).toDouble();
+                        final maxSeconds = rawMax < 1 ? 1.0 : rawMax;
+                        final rawValue = position.inMilliseconds.toDouble();
+                        final value = rawValue.clamp(0.0, maxSeconds);
                         return Column(
                           children: [
                             Slider(
