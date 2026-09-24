@@ -27,6 +27,7 @@ $StateRoot = Join-Path $env:ProgramData 'LRS-Sangeet-Duniya'
 $LogFile = Join-Path $StateRoot 'watchdog.log'
 $ServerStdout = Join-Path $StateRoot 'server.stdout.log'
 $ServerStderr = Join-Path $StateRoot 'server.stderr.log'
+$PythonConfig = Join-Path $StateRoot 'python.json'
 
 function Resolve-RepoRoot {
     param([string]$Value)
@@ -48,10 +49,19 @@ function Write-Log {
 }
 
 function Get-PythonExecutable {
+    if (Test-Path -LiteralPath $PythonConfig) {
+        try {
+            $saved = Get-Content -LiteralPath $PythonConfig -Raw | ConvertFrom-Json
+            if ($saved.Exe -and (Test-Path -LiteralPath $saved.Exe)) {
+                return @{ Exe = [string]$saved.Exe; Prefix = @($saved.Prefix) }
+            }
+        } catch {}
+    }
+
     $candidates = @()
     try {
         $cmd = Get-Command python.exe -ErrorAction Stop
-        if ($cmd.Source) { $candidates += $cmd.Source }
+        if ($cmd.Source -and $cmd.Source -notmatch '\\WindowsApps\\') { $candidates += $cmd.Source }
     } catch {}
     try {
         $cmd = Get-Command py.exe -ErrorAction Stop
@@ -251,6 +261,8 @@ function Install-Watchdog {
     Ensure-StateRoot
 
     $pythonInfo = Get-PythonExecutable
+    Ensure-StateRoot
+    @{ Exe = $pythonInfo.Exe; Prefix = @($pythonInfo.Prefix) } | ConvertTo-Json | Set-Content -LiteralPath $PythonConfig -Encoding UTF8
     $serverPath = Join-Path $root 'tools\tailscale_admin_server.py'
     if (-not (Test-Path -LiteralPath $serverPath)) {
         throw "Cannot install watchdog: $serverPath does not exist."
