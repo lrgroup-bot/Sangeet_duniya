@@ -1,14 +1,38 @@
 # Phase 2 — Sangeeta
 
-Planned scope:
+## Implemented
 
-- Hey Sangeeta / Hi Sangeeta / Hello Sangeeta.
-- Hey Sweetheart / Hi Baby / Hello Darling.
-- Default Sweetheart personality.
-- Odia-first responses.
-- Hindi and English options.
-- Chat UI.
-- Voice commands mapped to playback actions.
-- No separate AI DJ.
+- [x] Sangeeta is the single assistant identity.
+- [x] Sweetheart personality is the default.
+- [x] Friendly, Funny and Music Expert modes.
+- [x] Odia-first voice responses with Hindi/English language options.
+- [x] Voice input using the device speech recognizer.
+- [x] Local text-to-speech using the device TTS engine.
+- [x] Wake phrase parsing for:
+  - Hey Sangeeta
+  - Hi Sangeeta
+  - Hello Sangeeta
+  - Hey Sweetheart
+  - Hi Sweetheart
+  - Hello Sweetheart
+  - Hey Baby
+  - Hi Baby
+  - Hello Baby
+  - Hey Darling
+  - Hi Darling
+  - Hello Darling
+  - Sangeeta / Sweetheart / Baby / Darling
+- [x] Music commands: play, pause, resume, next, previous.
+- [x] Voice command path is local-first; no cloud AI is required.
 
-Status: NOT STARTED.
+## Limitation
+
+The current wake mode is foreground and session-based because the speech_to_text package is designed for commands and short phrases rather than guaranteed always-on background hotword detection. citeturn291673search5turn336295search0
+
+## Acceptance
+
+- [x] Code analysis passes on CI.
+- [x] Unit test suite passes on CI.
+- [ ] Real-device microphone + Odia recognition/TTS regression test.
+
+Status: IMPLEMENTED — DEVICE VOICE TEST PENDING
