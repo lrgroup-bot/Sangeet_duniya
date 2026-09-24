@@ -1,7 +1,9 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
+import '../data/demo_songs.dart';
 import '../main.dart';
+import '../models/song.dart';
 import '../services/download_service.dart';
 import '../services/library_store.dart';
 import '../theme/app_theme.dart';
@@ -46,7 +48,7 @@ class PlayerScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Dance Mode',
             onPressed: () {
-              final item = audioHandler.mediaItem.valueOrNull;
+              final item = audioHandler.mediaItem.value;
               final category = item?.extras?['category']?.toString() ?? 'Party';
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -282,21 +284,12 @@ class PlayerScreen extends StatelessWidget {
     }
   }
 
-  dynamic _songFor(String id) {
-    for (final song in libraryStore.favorites) {
-      if (song.id == id) return song;
-    }
-    for (final song in libraryStore.downloads) {
-      if (song.id == id) return song;
-    }
-    // Demo catalog lookup keeps the player independent of persistence state.
-    for (final song in _allSongs) {
+  Song? _songFor(String id) {
+    for (final song in demoSongs) {
       if (song.id == id) return song;
     }
     return null;
   }
-
-  static final _allSongs = <dynamic>[];
 
   static String _format(Duration duration) {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
