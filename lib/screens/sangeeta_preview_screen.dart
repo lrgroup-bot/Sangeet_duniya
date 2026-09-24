@@ -6,11 +6,29 @@ import '../theme/app_theme.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 
-class SangeetaPreviewScreen extends StatelessWidget {
+class SangeetaPreviewScreen extends StatefulWidget {
   const SangeetaPreviewScreen({super.key});
 
   @override
+  State<SangeetaPreviewScreen> createState() => _SangeetaPreviewScreenState();
+}
+
+class _SangeetaPreviewScreenState extends State<SangeetaPreviewScreen> {
+  SangeetaPose _pose = SangeetaPose.idle;
+
+  @override
   Widget build(BuildContext context) {
+    final poses = <(String, SangeetaPose)>[
+      ('Idle', SangeetaPose.idle),
+      ('Greeting', SangeetaPose.greeting),
+      ('Listening', SangeetaPose.listening),
+      ('Speaking', SangeetaPose.speaking),
+      ('Dance', SangeetaPose.dance),
+      ('Pause', SangeetaPose.sit),
+      ('Next', SangeetaPose.next),
+      ('Previous', SangeetaPose.previous),
+    ];
+
     return Scaffold(
       appBar: AppBar(title: const Text('Sangeeta Avatar')),
       body: SafeArea(
@@ -29,21 +47,26 @@ class SangeetaPreviewScreen extends StatelessWidget {
             const SizedBox(height: 16),
             ListenableBuilder(
               listenable: avatarProfileService,
-              builder: (context, _) => Container(
+              builder: (context, _) => AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
                 height: 390,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(34),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xFF281908), Color(0xFF090807)],
+                    colors: avatarProfileService.outfit == AvatarOutfit.romantic
+                        ? const [Color(0xFF3A0D1E), Color(0xFF090807)]
+                        : const [Color(0xFF281908), Color(0xFF090807)],
                   ),
-                  border: Border.all(color: AppTheme.gold.withValues(alpha: .5)),
+                  border: Border.all(
+                    color: AppTheme.gold.withValues(alpha: .5),
+                  ),
                 ),
                 alignment: Alignment.bottomCenter,
                 child: RiveAvatarStage(
                   outfit: avatarProfileService.outfit,
-                  pose: SangeetaPose.idle,
+                  pose: _pose,
                   size: 350,
                 ),
               ),
@@ -55,22 +78,26 @@ class SangeetaPreviewScreen extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Sangeeta uses one fixed original adult face, hairstyle, headphones and body proportions across every outfit and animation. Only the wardrobe and pose change.',
+              'Sangeeta keeps one original adult face, hairstyle, headphones and body proportions across outfits and poses. The wardrobe changes, while her identity stays consistent.',
             ),
             const SizedBox(height: 14),
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: AvatarOutfit.values
-                  .map(
-                    (outfit) => ChoiceChip(
-                      label: Text(outfit.label),
-                      selected: avatarProfileService.outfit == outfit,
-                      onSelected: (_) => avatarProfileService.setOutfit(outfit),
-                    ),
-                  )
-                  .toList(),
+            ListenableBuilder(
+              listenable: avatarProfileService,
+              builder: (context, _) => Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: AvatarOutfit.values
+                    .map(
+                      (outfit) => ChoiceChip(
+                        label: Text(outfit.label),
+                        selected: avatarProfileService.outfit == outfit,
+                        onSelected: (_) =>
+                            avatarProfileService.setOutfit(outfit),
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
             const SizedBox(height: 18),
             const Text(
@@ -78,20 +105,19 @@ class SangeetaPreviewScreen extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 10),
-            const Wrap(
+            Wrap(
               alignment: WrapAlignment.center,
               spacing: 8,
               runSpacing: 8,
-              children: [
-                Chip(label: Text('Idle')),
-                Chip(label: Text('Greeting')),
-                Chip(label: Text('Listening')),
-                Chip(label: Text('Speaking')),
-                Chip(label: Text('Dance')),
-                Chip(label: Text('Sit on Pause')),
-                Chip(label: Text('Point Next')),
-                Chip(label: Text('Point Previous')),
-              ],
+              children: poses
+                  .map(
+                    (entry) => ChoiceChip(
+                      label: Text(entry.$1),
+                      selected: _pose == entry.$2,
+                      onSelected: (_) => setState(() => _pose = entry.$2),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),
