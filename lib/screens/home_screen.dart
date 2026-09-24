@@ -278,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               alignment: Alignment.centerLeft,
                               child: IconButton.filledTonal(
                                 tooltip: 'Talk to Sangeeta',
-                                onPressed: () => sangeetaService.setWakeMode(true),
+                                onPressed: sangeetaService.startListening,
                                 icon: Icon(
                                   sangeetaService.isListening
                                       ? Icons.mic_rounded

@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../services/distribution_service.dart';
@@ -75,6 +78,44 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
     );
   }
 
+  Future<File> _downloadApkFile() async {
+    final url = androidController.text.trim();
+    final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 30));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException('APK download failed: HTTP ' + response.statusCode.toString());
+    }
+    final root = await getApplicationDocumentsDirectory();
+    final dir = Directory(root.path + '/sangeet_duniya/apk');
+    await dir.create(recursive: true);
+    final file = File(dir.path + '/LRS-Sangeet-Duniya-v2.0.0.apk');
+    await file.writeAsBytes(response.bodyBytes, flush: true);
+    return file;
+  }
+
+  Future<void> downloadApk() async {
+    try {
+      final file = await _downloadApkFile();
+      await SharePlus.instance.share(
+        ShareParams(
+          subject: "LR's Sangeet_Duniya APK",
+          text: 'APK file',
+          files: [XFile(file.path, mimeType: 'application/vnd.android.package-archive')],
+        ),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('APK downloaded and ready to share.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('APK download failed: ' + e.toString())),
+        );
+      }
+    }
+  }
+
   Future<void> shareLinks() async {
     await SharePlus.instance.share(
       ShareParams(
@@ -144,7 +185,7 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
                   Text(
                     isBoth
                         ? 'Both links are included in the QR data and in the shared message. For the easiest customer experience, the shared message contains separate Android and iOS links.'
-                        : 'The QR and shared link use the selected platform.',
+                        : 'The Android QR points directly to the versioned APK file.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .68),
@@ -171,18 +212,27 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
                         child: OutlinedButton.icon(
                           onPressed: copyLink,
                           icon: const Icon(Icons.copy_rounded),
-                          label: const Text('Copy'),
+                          label: const Text('Copy link'),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: shareLinks,
-                          icon: const Icon(Icons.share_rounded),
-                          label: const Text('Share'),
+                          onPressed: downloadApk,
+                          icon: const Icon(Icons.download_rounded),
+                          label: const Text('Download APK'),
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: shareLinks,
+                      icon: const Icon(Icons.share_rounded),
+                      label: const Text('Share direct link'),
+                    ),
                   ),
                 ],
               ),

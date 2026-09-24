@@ -101,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Choose an original wardrobe preset. The live Sangeeta avatar is bundled inside the app and works without a cloud avatar service.',
+                'Choose the Sangeeta look used for music moods. The phone uses an animated reference stage; a connected PC can provide a rendered live-avatar video.',
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<AvatarOutfit>(
