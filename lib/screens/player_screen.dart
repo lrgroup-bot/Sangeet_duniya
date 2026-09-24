@@ -207,13 +207,18 @@ class PlayerScreen extends StatelessWidget {
                         _PlayerAction(
                           icon: Icons.lyrics_rounded,
                           label: 'Lyrics',
-                          onTap: () => showDialog<void>(
-                            context: context,
+                          onTap: () {
+                            final song = _songFor(item.id);
+                            return showDialog<void>(
+                              context: context,
                             builder: (context) => AlertDialog(
                               title: Text(item.title),
-                              content: const Text(
-                                'Lyrics provider will be connected in the music-source phase. '
-                                'This Phase 4 build keeps the player free and local-first.',
+                              content: SingleChildScrollView(
+                                child: Text(
+                                  song?.lyrics.isNotEmpty == true
+                                      ? song!.lyrics
+                                      : 'Lyrics are not available for this track yet.',
+                                ),
                               ),
                               actions: [
                                 TextButton(
@@ -221,8 +226,9 @@ class PlayerScreen extends StatelessWidget {
                                   child: const Text('OK'),
                                 ),
                               ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
                         _PlayerAction(
                           icon: libraryStore.isDownloaded(item.id)
