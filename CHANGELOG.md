@@ -32,7 +32,9 @@
 - Optional Rive .riv network source and state-machine configuration.
 - Private owner mode and time-limited activation tokens.
 - License plans: 7 days, 30 days, 365 days, Ultimate Lifetime.
-- Annual private-use price label: ₹100 / year.
+- Payment and checkout removed; all access-validity choices are free.
+- Added local Admin Dashboard with active/expired/expiring counts and recipient records.
+- Added free offline QR/download-link screen.
 - Activation and license manager screens.
 
 ### Verification
