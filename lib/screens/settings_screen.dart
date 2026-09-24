@@ -10,7 +10,6 @@ import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import '../widgets/sangeeta_logo.dart';
 import 'admin_dashboard_screen.dart';
-import 'license_admin_screen.dart';
 import 'equalizer_screen.dart';
 import 'sangeeta_preview_screen.dart';
 
@@ -201,24 +200,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   title: const Text('Admin Dashboard'),
                   subtitle: const Text(
-                    'Users, active tokens, expiry days and free distribution QR',
+                    'Customer details, six-digit tokens and exact validity',
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const AdminDashboardScreen(),
-                    ),
-                  ),
-                ),
-              if (authProvider.isOwner)
-                ListTile(
-                  leading: const Icon(Icons.key_rounded, color: AppTheme.gold),
-                  title: const Text('License Manager'),
-                  subtitle: const Text('Generate 7-day, 30-day, 365-day or lifetime tokens'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const LicenseAdminScreen(),
                     ),
                   ),
                 ),
