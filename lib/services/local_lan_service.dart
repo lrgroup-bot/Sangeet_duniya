@@ -46,6 +46,22 @@ class LocalLanService extends ChangeNotifier {
     _accessKey = prefs.getString(_keyKey) ?? '';
     _savedAdminLink = prefs.getString(_savedLinkKey) ?? '';
     _remoteAdminLink = prefs.getString(_remoteAdminLinkKey) ?? '';
+    final pendingRaw =
+        prefs.getStringList(_pendingRequestsKey) ?? <String>[];
+    _pendingRequests
+      ..clear()
+      ..addAll(
+        pendingRaw.map((raw) {
+          try {
+            final value = jsonDecode(raw);
+            return value is Map<String, dynamic>
+                ? Map<String, dynamic>.from(value)
+                : null;
+          } catch (_) {
+            return null;
+          }
+        }).whereType<Map<String, dynamic>>(),
+      );
 
     if (_accessKey.isEmpty) {
       _accessKey = _newAccessKey();
