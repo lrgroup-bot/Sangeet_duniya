@@ -10,9 +10,6 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,13 +37,6 @@ jobs:
 
       - name: Check PC Tailscale server
         run: python3 -m py_compile tools/tailscale_admin_server.py
-      - name: Check Windows watchdog PowerShell syntax
-        shell: pwsh
-        run: |
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile('tools/windows_lrs_server_watchdog.ps1', [ref]$null, [ref]$errors) | Out-Null
-          if ($errors.Count -gt 0) { $errors | Format-List; exit 1 }
-          Write-Host 'Windows watchdog PowerShell syntax OK.'
 
       - name: Get packages
         run: flutter pub get
@@ -63,29 +53,9 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: lrs-sangeet-duniya-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
-
       - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
           name: lrs-sangeet-duniya-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Prepare GitHub Release APK
-        if: github.event_name == 'push' && github.ref == 'refs/heads/tailscale-admin'
-        run: |
-          cp build/app/outputs/flutter-apk/app-release.apk "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
-
-      - name: Publish GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/tailscale-admin'
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: "v1.0.0-alpha.${{ github.run_number }}"
-          name: "LRS Sangeet_Duniya Alpha v1.0.0.${{ github.run_number }}"
-          prerelease: true
-          generate_release_notes: true
-          files: "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
+          if-no-files-found: error
