@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/sangeeta_personality.dart';
+import '../services/avatar_profile_service.dart';
 import '../services/sangeeta_service.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 import '../theme/app_theme.dart';
 import '../widgets/sangeeta_logo.dart';
 import 'settings_screen.dart';
@@ -75,6 +78,68 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                ),
+                const SizedBox(height: 10),
+                ListenableBuilder(
+                  listenable: avatarProfileService,
+                  builder: (context, _) {
+                    final pose = sangeetaService.isListening
+                        ? SangeetaPose.listening
+                        : sangeetaService.isSpeaking
+                            ? SangeetaPose.speaking
+                            : SangeetaPose.greeting;
+                    return Container(
+                      height: 255,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Color(0xFF241507), Color(0xFF090807)],
+                        ),
+                        border: Border.all(
+                          color: AppTheme.gold.withValues(alpha: .45),
+                        ),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          RiveAvatarStage(
+                            outfit: avatarProfileService.outfit,
+                            pose: pose,
+                            size: 230,
+                          ),
+                          Positioned(
+                            left: 18,
+                            bottom: 14,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: .55),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                child: Text(
+                                  sangeetaService.isListening
+                                      ? 'Sangeeta is listening…'
+                                      : sangeetaService.isSpeaking
+                                          ? 'Sangeeta is speaking…'
+                                          : 'Sangeeta • Sweetheart',
+                                  style: const TextStyle(
+                                    color: AppTheme.gold2,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 Card(
