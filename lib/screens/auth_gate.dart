@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_provider.dart';
 import 'activation_screen.dart';
-import 'admin_dashboard_screen.dart';
 import 'shell_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -19,10 +18,8 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        if (authProvider.isOwner) {
-          return const AdminDashboardScreen();
-        }
-
+        // Owner devices enter the real music app just like activated users.
+        // The admin console remains available from Home -> Owner Console.
         return authProvider.isActivated
             ? const ShellScreen()
             : const ActivationScreen();
