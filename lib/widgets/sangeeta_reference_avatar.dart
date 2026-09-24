@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:math' as math;
+
+import '../models/avatar_outfit.dart';
 
 import 'package:flutter/material.dart';
 
