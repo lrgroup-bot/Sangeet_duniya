@@ -689,6 +689,15 @@ class LocalLanService extends ChangeNotifier {
       return;
     }
 
+    if (record.customerName.trim().isNotEmpty &&
+        record.customerName.trim().toLowerCase() != name.toLowerCase()) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Name does not match the administrator verification.',
+      });
+      return;
+    }
+
     await userRegistry.saveUser(
       name: name,
       phoneNumber: phone,
