@@ -7,6 +7,7 @@ import '../main.dart';
 import '../models/song.dart';
 import '../services/auth_provider.dart';
 import '../services/library_store.dart';
+import '../services/sangeeta_service.dart';
 import '../services/music_catalog_service.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
@@ -249,28 +250,44 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'ହାଇ ଜାନ୍…',
-                            style: TextStyle(
-                              color: Color(0xFFFFC857),
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
+                    Expanded(
+                      child: ListenableBuilder(
+                        listenable: sangeetaService,
+                        builder: (context, _) => Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ହାଇ ଜାନ୍…',
+                              style: TextStyle(
+                                color: Color(0xFFFFC857),
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            'ମୁଁ Sangeeta। ଗୀତ ଚଳାଇବି, ଖୋଜିବି ଏବଂ Auto EQ ଚୟନ କରିଦେବି।',
-                            style: TextStyle(
-                              fontSize: 13,
-                              height: 1.35,
+                            const SizedBox(height: 6),
+                            const Text(
+                              'କହନ୍ତୁ “Hey Sangeeta”। ମୁଁ ଗୀତ ଖୋଜିବି ଏବଂ ଚଳାଇଦେବି।',
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.35,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton.filledTonal(
+                                tooltip: 'Talk to Sangeeta',
+                                onPressed: () => sangeetaService.setWakeMode(true),
+                                icon: Icon(
+                                  sangeetaService.isListening
+                                      ? Icons.mic_rounded
+                                      : Icons.mic_none_rounded,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
