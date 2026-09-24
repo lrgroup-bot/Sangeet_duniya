@@ -1,0 +1,23 @@
+name: lrs_sangeet_duniya
+description: LR's Sangeet_Duniya - free music app with background playback and Sangeeta companion.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  audio_service: ^0.18.19
+  just_audio: ^0.10.6
+  audio_session: ^0.2.4
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
