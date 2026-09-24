@@ -9,6 +9,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../data/demo_songs.dart';
 import '../main.dart';
 import '../models/sangeeta_personality.dart';
+import '../models/song.dart';
 import 'permission_service.dart';
 
 class SangeetaService extends ChangeNotifier {
@@ -245,7 +246,7 @@ class SangeetaService extends ChangeNotifier {
     return commands.any((command) => value == command);
   }
 
-  dynamic _findSong(String query) {
+  Song? _findSong(String query) {
     final normalized = query.toLowerCase();
     for (final song in demoSongs) {
       if (song.title.toLowerCase() == normalized ||
