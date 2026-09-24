@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../services/distribution_service.dart';
 import '../theme/app_theme.dart';
@@ -13,45 +14,82 @@ class DistributionQrScreen extends StatefulWidget {
 }
 
 class _DistributionQrScreenState extends State<DistributionQrScreen> {
-  late final TextEditingController urlController;
+  late final TextEditingController androidController;
+  late final TextEditingController iosController;
+
+  DistributionPlatform platform = DistributionPlatform.android;
 
   @override
   void initState() {
     super.initState();
-    urlController = TextEditingController(
-      text: distributionService.downloadUrl,
-    );
+    androidController =
+        TextEditingController(text: distributionService.androidUrl);
+    iosController = TextEditingController(text: distributionService.iosUrl);
   }
 
   @override
   void dispose() {
-    urlController.dispose();
+    androidController.dispose();
+    iosController.dispose();
     super.dispose();
   }
 
+  String get _qrData => switch (platform) {
+        DistributionPlatform.android => androidController.text.trim(),
+        DistributionPlatform.ios => iosController.text.trim(),
+        DistributionPlatform.both => _bothMessageForQr(),
+      };
+
+  String _bothMessageForQr() =>
+      'LR\'s Sangeet_Duniya\nAndroid: ${androidController.text.trim()}\niOS: ${iosController.text.trim()}';
+
+  String _shareText() {
+    final android = androidController.text.trim();
+    final ios = iosController.text.trim();
+
+    return switch (platform) {
+      DistributionPlatform.android =>
+        "LR's Sangeet_Duniya\nAndroid download:\n$android",
+      DistributionPlatform.ios =>
+        "LR's Sangeet_Duniya\niOS download:\n$ios",
+      DistributionPlatform.both =>
+        "LR's Sangeet_Duniya\n\nAndroid download:\n$android\n\niOS download:\n$ios",
+    };
+  }
+
   Future<void> save() async {
-    await distributionService.setDownloadUrl(urlController.text);
+    await distributionService.setAndroidUrl(androidController.text);
+    await distributionService.setIosUrl(iosController.text);
     if (!mounted) return;
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Download link saved.')),
+      const SnackBar(content: Text('Android and iOS links saved.')),
     );
   }
 
   Future<void> copyLink() async {
-    await Clipboard.setData(
-      ClipboardData(text: distributionService.downloadUrl),
-    );
+    await Clipboard.setData(ClipboardData(text: _shareText()));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Download link copied.')),
+      const SnackBar(content: Text('Selected download link(s) copied.')),
+    );
+  }
+
+  Future<void> shareLinks() async {
+    await SharePlus.instance.share(
+      ShareParams(
+        subject: "LR's Sangeet_Duniya",
+        text: _shareText(),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isBoth = platform == DistributionPlatform.both;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Download QR')),
+      appBar: AppBar(title: const Text('Share App')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -61,26 +99,65 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
               child: Column(
                 children: [
                   const Text(
-                    'Scan to get LR\'s Sangeet_Duniya',
+                    'Share LR\'s Sangeet_Duniya',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 14),
+                  SegmentedButton<DistributionPlatform>(
+                    segments: const [
+                      ButtonSegment(
+                        value: DistributionPlatform.android,
+                        icon: Icon(Icons.android_rounded),
+                        label: Text('Android'),
+                      ),
+                      ButtonSegment(
+                        value: DistributionPlatform.ios,
+                        icon: Icon(Icons.phone_iphone_rounded),
+                        label: Text('iOS'),
+                      ),
+                      ButtonSegment(
+                        value: DistributionPlatform.both,
+                        icon: Icon(Icons.devices_other_rounded),
+                        label: Text('Both'),
+                      ),
+                    ],
+                    selected: <DistributionPlatform>{platform},
+                    onSelectionChanged: (value) {
+                      setState(() => platform = value.first);
+                    },
+                  ),
                   const SizedBox(height: 18),
                   Container(
                     padding: const EdgeInsets.all(14),
                     color: Colors.white,
                     child: QrImageView(
-                      data: distributionService.downloadUrl,
+                      data: _qrData,
                       size: 250,
                       version: QrVersions.auto,
                     ),
                   ),
                   const SizedBox(height: 14),
+                  Text(
+                    isBoth
+                        ? 'Both links are included in the QR data and in the shared message. For the easiest customer experience, the shared message contains separate Android and iOS links.'
+                        : 'The QR and shared link use the selected platform.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .68),
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   SelectableText(
-                    distributionService.downloadUrl,
+                    switch (platform) {
+                      DistributionPlatform.android => androidController.text,
+                      DistributionPlatform.ios => iosController.text,
+                      DistributionPlatform.both => _shareText(),
+                    },
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .70),
@@ -88,13 +165,24 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: copyLink,
-                      icon: const Icon(Icons.copy_rounded),
-                      label: const Text('Copy download link'),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: copyLink,
+                          icon: const Icon(Icons.copy_rounded),
+                          label: const Text('Copy'),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: shareLinks,
+                          icon: const Icon(Icons.share_rounded),
+                          label: const Text('Share'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -108,31 +196,44 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Distribution page',
+                    'Download links',
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Paste the free web page, GitHub Release, or other download URL you control. The QR is generated entirely offline.',
+                  Text(
+                    'Set the Android APK/release URL and iOS distribution URL here. Then choose Android, iOS, or Both when sharing.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .70),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   TextField(
-                    controller: urlController,
+                    controller: androidController,
                     keyboardType: TextInputType.url,
                     decoration: const InputDecoration(
-                      labelText: 'Download URL',
+                      labelText: 'Android APK / download URL',
+                      prefixIcon: Icon(Icons.android_rounded),
                     ),
                   ),
                   const SizedBox(height: 12),
+                  TextField(
+                    controller: iosController,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'iOS download / TestFlight URL',
+                      prefixIcon: Icon(Icons.phone_iphone_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: save,
                       icon: const Icon(Icons.save_rounded),
-                      label: const Text('Save link'),
+                      label: const Text('Save links'),
                     ),
                   ),
                 ],
@@ -144,7 +245,7 @@ class _DistributionQrScreenState extends State<DistributionQrScreen> {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Text(
-                'Payment is disabled in this app. The QR and activation system do not collect money or require a payment gateway.',
+                'Payment is disabled in this app. Sharing links and QR codes do not collect money.',
                 style: TextStyle(color: AppTheme.gold2),
               ),
             ),
