@@ -78,8 +78,8 @@ class PlayerScreen extends StatelessWidget {
                     builder: (context, durationSnapshot) {
                       final position = positionSnapshot.data ?? Duration.zero;
                       final duration = durationSnapshot.data ?? item.duration;
-                      final max = ((duration?.inMilliseconds ?? 1).toDouble()).clamp(1.0, double.infinity);
-                      final current = position.inMilliseconds.toDouble().clamp(0.0, max);
+                      final max = ((duration?.inMilliseconds ?? 1).toDouble())
+                      final current = position.inMilliseconds.toDouble()
                       return Column(children: [
                         Slider(min: 0, max: max, value: current, onChanged: (v) => audioHandler.seek(Duration(milliseconds: v.round()))),
                         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(_format(position)), Text(_format(duration ?? Duration.zero))]),
