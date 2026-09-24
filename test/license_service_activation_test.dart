@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../lib/models/license_plan.dart';
-import '../lib/services/license_service.dart';
+import 'package:lrs_sangeet_duniya/models/license_plan.dart';
+import 'package:lrs_sangeet_duniya/services/license_service.dart';
 
 void main() {
   setUp(() {
