@@ -493,6 +493,13 @@ class Handler(BaseHTTPRequestHandler):
                         {"ok": False, "error": "Token is bound to a different phone."},
                     )
 
+                verified_name = str(record.get("customerName", "")).strip()
+                if verified_name and verified_name.casefold() != name.casefold():
+                    return self.json(
+                        403,
+                        {"ok": False, "error": "Name does not match the administrator verification."},
+                    )
+
                 activated_at = iso()
                 updated = dict(record)
                 updated["used"] = True
