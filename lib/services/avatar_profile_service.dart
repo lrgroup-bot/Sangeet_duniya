@@ -5,12 +5,8 @@ import '../models/avatar_outfit.dart';
 
 class AvatarProfileService extends ChangeNotifier {
   static const _outfitKey = 'sangeeta_avatar_outfit';
-  static const _riveUrlKey = 'sangeeta_rive_url';
-  static const _riveStateMachineKey = 'sangeeta_rive_state_machine';
 
   AvatarOutfit outfit = AvatarOutfit.casual;
-  String riveUrl = '';
-  String riveStateMachine = '';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -21,8 +17,6 @@ class AvatarProfileService extends ChangeNotifier {
         orElse: () => AvatarOutfit.casual,
       );
     }
-    riveUrl = prefs.getString(_riveUrlKey) ?? '';
-    riveStateMachine = prefs.getString(_riveStateMachineKey) ?? '';
     notifyListeners();
   }
 
@@ -30,27 +24,6 @@ class AvatarProfileService extends ChangeNotifier {
     outfit = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_outfitKey, value.name);
-    notifyListeners();
-  }
-
-  Future<void> setRiveSource({
-    required String url,
-    required String stateMachine,
-  }) async {
-    riveUrl = url.trim();
-    riveStateMachine = stateMachine.trim();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_riveUrlKey, riveUrl);
-    await prefs.setString(_riveStateMachineKey, riveStateMachine);
-    notifyListeners();
-  }
-
-  Future<void> clearRiveSource() async {
-    riveUrl = '';
-    riveStateMachine = '';
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_riveUrlKey);
-    await prefs.remove(_riveStateMachineKey);
     notifyListeners();
   }
 }
