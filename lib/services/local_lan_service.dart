@@ -343,7 +343,7 @@ class LocalLanService extends ChangeNotifier {
             scheme: 'http',
             host: host,
             port: remotePort,
-            path: '/connect',
+            path: '/',
             queryParameters: <String, String>{'key': key},
           );
           results[uri.toString()] = uri;
