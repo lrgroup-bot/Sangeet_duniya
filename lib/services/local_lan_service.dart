@@ -598,6 +598,12 @@ class LocalLanService extends ChangeNotifier {
         case '/activate':
           await _handleActivate(request);
           return;
+        case '/request-access':
+          await _handleAccessRequest(request);
+          return;
+        case '/pending':
+          await _handlePending(request);
+          return;
         case '/register':
           await _handleRegister(request);
           return;
