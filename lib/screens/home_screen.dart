@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../data/demo_songs.dart';
 import '../main.dart';
 import '../models/song.dart';
@@ -12,24 +13,52 @@ import 'player_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-  @override State<HomeScreen> createState() => _HomeScreenState();
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Song>> _trendingFuture;
-  @override void initState() { super.initState(); _trendingFuture = musicCatalogService.trending(limit: 20); }
 
-  @override Widget build(BuildContext context) {
+  @override
+  void initState() {
+    super.initState();
+    _trendingFuture = musicCatalogService.trending(limit: 20);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            pinned: true, backgroundColor: Colors.black,
-            title: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text("LR's Sangeet_Duniya", style: TextStyle(fontWeight: FontWeight.w900)),
-              Text('Music made personal', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
-            ]),
-            actions: [IconButton(tooltip: 'Open player', onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen())), icon: const Icon(Icons.graphic_eq_rounded))],
+            pinned: true,
+            backgroundColor: Colors.black,
+            title: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "LR's Sangeet_Duniya",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                Text(
+                  'Music made personal',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'Open player',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PlayerScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.graphic_eq_rounded),
+              ),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -70,7 +99,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(height: 6),
                             Text(
                               'ମୁଁ Sangeeta। ଗୀତ ଚଳାଇବି, ଖୋଜିବି ଏବଂ Auto EQ ଚୟନ କରିଦେବି।',
-                              style: TextStyle(fontSize: 13, height: 1.35),
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.35,
+                              ),
                             ),
                           ],
                         ),
@@ -84,79 +116,80 @@ class _HomeScreenState extends State<HomeScreen> {
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text('Quick moods', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              child: Text(
+                'Quick moods',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
-          const SliverToBoxAdapter(
-            child: SizedBox.shrink(),
-          ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.zero,
-              child: SizedBox.shrink(),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 46,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                children: const [
+                  _MoodChip(label: 'Trending'),
+                  _MoodChip(label: 'Bikini mood'),
+                  _MoodChip(label: 'Party'),
+                  _MoodChip(label: 'Odia'),
+                  _MoodChip(label: 'Bhajan'),
+                ],
+              ),
             ),
           ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, 18),
-              child: SizedBox.shrink(),
-            ),
-          ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.zero,
-              child: SizedBox.shrink(),
-            ),
-          ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 14, 20, 18),
-              child: Card(child: Padding(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Sangeeta', style: TextStyle(color: Color(0xFFFFC857), fontSize: 15, fontWeight: FontWeight.w800)),
-                SizedBox(height: 6),
-                Text('Internet Music + Local Library', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                SizedBox(height: 8),
-                Text('Search, stream, save permitted tracks offline, and let Sangeeta choose Auto EQ on every new song.'),
-              ]))),
-            ),
-          ),
-              child: Card(child: Padding(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Sangeeta', style: TextStyle(color: Color(0xFFFFC857), fontSize: 15, fontWeight: FontWeight.w800)),
-                SizedBox(height: 6),
-                Text('Internet Music + Local Library', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                SizedBox(height: 8),
-                Text('Search, stream, save permitted tracks offline, and let Sangeeta choose Auto EQ on every new song.'),
-              ]))),
-            ),
-          ),
-          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(20, 4, 20, 12), child: Text('Quick moods', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)))),
-          SliverToBoxAdapter(child: SizedBox(height: 46, child: ListView(padding: const EdgeInsets.symmetric(horizontal: 20), scrollDirection: Axis.horizontal, children: const [
-            _MoodChip(label: 'Trending'), _MoodChip(label: 'Romantic'), _MoodChip(label: 'Party'), _MoodChip(label: 'Odia'), _MoodChip(label: 'Bhajan'),
-          ]))),
           SliverToBoxAdapter(
             child: FutureBuilder<List<Song>>(
               future: _trendingFuture,
               builder: (context, snapshot) {
                 final songs = snapshot.data ?? demoSongs;
-                if (snapshot.connectionState == ConnectionState.waiting) return const Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator()));
-                if (songs.isEmpty) return const Padding(padding: EdgeInsets.all(20), child: Center(child: Text('No trending tracks found.')));
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(30),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (songs.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(child: Text('No trending tracks found.')),
+                  );
+                }
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Trending Music', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 10),
-                    ...songs.take(10).map((song) => Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SongCard(
-                        song: song,
-                        onTap: () async {
-                          await audioHandler.playSong(song, songs: songs);
-                          if (!context.mounted) return;
-                          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen()));
-                        },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Trending Music',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    )),
-                  ]),
+                      const SizedBox(height: 10),
+                      ...songs.take(10).map(
+                        (song) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: SongCard(
+                            song: song,
+                            onTap: () async {
+                              await audioHandler.playSong(song, songs: songs);
+                              if (!context.mounted) return;
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const PlayerScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -167,8 +200,14 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, _) => Padding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 child: Text(
-                  libraryStore.historySongs.isEmpty ? 'Your history stays on this phone.' : 'Recently played: ' + libraryStore.historySongs.first.title,
-                  style: TextStyle(color: Colors.white.withValues(alpha: .55), fontSize: 12),
+                  libraryStore.historySongs.isEmpty
+                      ? 'Your history stays on this phone.'
+                      : 'Recently played: ' +
+                          libraryStore.historySongs.first.title,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: .55),
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
@@ -181,9 +220,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _MoodChip extends StatelessWidget {
   const _MoodChip({required this.label});
+
   final String label;
-  @override Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(right: 10),
-    child: Chip(label: Text(label), side: const BorderSide(color: Color(0x44FFC857)), backgroundColor: const Color(0x22181818)),
-  );
-}
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Chip(
+          label: Text(label),
+          side: const BorderSide(color: Color(0x44FFC857)),
+          backgroundColor: const Color(0x22181818),
+        ),
+      );
