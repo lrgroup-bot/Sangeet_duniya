@@ -8,7 +8,7 @@ Development rule: A phase is marked COMPLETED only after code is implemented and
 
 | Phase | Scope | Status | Testing |
 |---|---|---|---|
-| 1 | Foundation: UI + player + background audio | IN PROGRESS | Pending |
+| 1 | Foundation: UI + player + background audio | 🟡 BUILD VERIFIED | ✅ CI PASS; 📱 device test pending |
 | 2 | Sangeeta voice/chat assistant | NOT STARTED | Pending |
 | 3 | Sangeeta dancing avatar + wardrobe | NOT STARTED | Pending |
 | 4 | Music engine: downloads, lyrics, playlists, smart library | NOT STARTED | Pending |
@@ -19,6 +19,7 @@ Development rule: A phase is marked COMPLETED only after code is implemented and
 Target features:
 
 - Premium black-and-gold AMOLED UI.
+- Vector Sangeeta logo with gradient, glow and layered 3D-style lettering.
 - Splash screen and app branding.
 - Home, Search, Library, and Player screens.
 - Demo streaming playback as the test transport.
@@ -147,3 +148,11 @@ MIT — see LICENSE.
 ## Latest verification
 
 GitHub Actions run 6 passed flutter analyze, flutter test, Android debug APK build, and APK artifact upload. The generated debug APK is available from the build artifact. Real-device runtime checks are still required before Phase 1 is marked COMPLETED.
+
+## v0.1.1 rebuild
+
+- Replaced the temporary splash icon with a vector-drawn Sangeeta logo.
+- Added startup fallback so media-service initialization does not leave the app at a white screen.
+- Android launcher icons are generated from the checked-in vector logo during CI.
+- GitHub Actions run 17: analyze PASS, unit tests PASS, debug APK build PASS, artifact upload PASS.
+- Real Android device behavior still requires physical-device verification.
