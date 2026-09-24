@@ -322,6 +322,75 @@ class Handler(BaseHTTPRequestHandler):
         self.path_raw = self.path
         path = self.request_path()
 
+        if path == "/request-access":
+            if not self.user_ok():
+                return self.json(
+                    401,
+                    {"ok": False, "error": "User key required."},
+                )
+
+            body = self.read() or {}
+            name = str(body.get("name", "")).strip()
+            phone = str(body.get("phone", "")).strip()
+
+            if (
+                len(name) < 2
+                or len(phone) != 10
+                or not phone.isdigit()
+                or phone[0] not in "6789"
+            ):
+                return self.json(
+                    400,
+                    {
+                        "ok": False,
+                        "error": "Name and valid 10-digit phone number are required.",
+                    },
+                )
+
+            self.store.save_pending(
+                {
+                    "id": str(int(time.time() * 1000000)),
+                    "name": name,
+                    "phone": phone,
+                    "requestedAt": iso(),
+                    "status": "pending",
+                    "source": "remote",
+                }
+            )
+            return self.json(
+                200,
+                {
+                    "ok": True,
+                    "status": "pending",
+                    "message": "Access request sent to the administrator.",
+                },
+            )
+
+        if path == "/pending/resolve":
+            if not self.admin_ok():
+                return self.json(
+                    401,
+                    {"ok": False, "error": "Admin key required."},
+                )
+
+            body = self.read() or {}
+            phone = str(body.get("phone", "")).strip()
+            if (
+                len(phone) != 10
+                or not phone.isdigit()
+                or phone[0] not in "6789"
+            ):
+                return self.json(
+                    400,
+                    {
+                        "ok": False,
+                        "error": "A valid phone number is required.",
+                    },
+                )
+
+            self.store.remove_pending(phone)
+            return self.json(200, {"ok": True})
+
         if path == "/tokens":
             if not self.admin_ok():
                 return self.json(
