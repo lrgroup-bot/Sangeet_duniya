@@ -15,18 +15,14 @@ Phase 5 now includes the premium interactive Sangeeta layer plus a private activ
 - Previous state → Sangeeta animates to the Previous control.
 - Mini-player avatar state follows playback.
 - Wardrobe presets: Casual modern, Party, Romantic, Traditional Odia, Gym / Chill, Resort swimwear, Elegant satin nightwear.
-- Optional external Rive runtime source.
-- Rive state-machine URL can be configured from Settings.
 - Private activation system with owner mode and 7-day, 30-day, 365-day, or Ultimate Lifetime tokens.
 - Payment disabled: no payment gateway, checkout, subscription purchase, or money collection.
 - Local Admin Dashboard with user name, phone, access period and days-left statistics.
 - Free offline QR/download link generation.
 
-## External avatar runtime
+## Mobile-only avatar runtime
 
-The app uses the official Rive Flutter runtime as an optional host for externally supplied .riv characters. The built-in Flutter avatar remains the offline fallback, so the application is not dependent on a remote animation file.
-
-Official runtime repository: https://github.com/rive-app/rive-flutter
+The live Sangeeta avatar is rendered locally by Flutter and stored/controlled on the phone. No external avatar server, remote Rive file, Supabase, Vercel, or other cloud runtime is required.
 
 ## Licensing note
 
@@ -34,7 +30,7 @@ The current token implementation is designed for private/personal distribution. 
 
 ## Free-only distribution
 
-The app does not collect money. The 7-day, 30-day, 365-day and Ultimate choices only control access validity.
+The app does not collect money. The 7-day, 30-day, 365-day and Ultimate choices only control access validity. No Supabase, Vercel, payment service, or cloud database is used at runtime.
 
 ## Remaining Phase 5 work
 
