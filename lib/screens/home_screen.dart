@@ -228,52 +228,52 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
               child: Container(
-                  height: 185,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF211607), Color(0xFF0B0906)],
+                height: 185,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF211607), Color(0xFF0B0906)],
+                  ),
+                  border: Border.all(color: Color(0x66FFC857)),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        'assets/brand/lrs_3d_brand.jpg',
+                        width: 165,
+                        height: 165,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    border: Border.all(color: Color(0x66FFC857)),
-                  ),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/brand/lrs_3d_brand.jpg',
-                          width: 165,
-                          height: 165,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ହାଇ ଜାନ୍…',
-                              style: TextStyle(
-                                color: Color(0xFFFFC857),
-                                fontSize: 19,
-                                fontWeight: FontWeight.w900,
-                              ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ହାଇ ଜାନ୍…',
+                            style: TextStyle(
+                              color: Color(0xFFFFC857),
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
                             ),
-                            SizedBox(height: 6),
-                            Text(
-                              'ମୁଁ Sangeeta। ଗୀତ ଚଳାଇବି, ଖୋଜିବି ଏବଂ Auto EQ ଚୟନ କରିଦେବି।',
-                              style: TextStyle(
-                                fontSize: 13,
-                                height: 1.35,
-                              ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'ମୁଁ Sangeeta। ଗୀତ ଚଳାଇବି, ଖୋଜିବି ଏବଂ Auto EQ ଚୟନ କରିଦେବି।',
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.35,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
