@@ -25,6 +25,9 @@ class SangeetaService extends ChangeNotifier {
 
   bool isListening = false;
   bool continuousWakeMode = true;
+
+  /// Exposed so the avatar can switch to a speaking animation while TTS is active.
+  bool get isSpeaking => _busySpeaking;
   String transcript = '';
   String reply = 'ହାଇ ଜାନ୍… ମୁଁ Sangeeta। ଗୀତ ଶୁଣିବାକୁ ପ୍ରସ୍ତୁତ। 💛';
 
