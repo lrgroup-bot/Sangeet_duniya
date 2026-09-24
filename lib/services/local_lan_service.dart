@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -11,27 +10,31 @@ import '../models/registered_user.dart';
 import 'license_service.dart';
 import 'user_registry_service.dart';
 
-/// Same-Wi-Fi registration bridge.
-/// The administrator phone hosts a tiny HTTP server on the local network.
-/// No cloud server, database, analytics, or remote account system is used.
+/// Local admin bridge. It works on same Wi-Fi and can also talk to a
+/// Windows/Linux/macOS PC server exposed privately by Tailscale Serve or
+/// publicly by Tailscale Funnel.
 class LocalLanService extends ChangeNotifier {
   static const int port = 40425;
   static const String _keyKey = 'local_admin_lan_key';
   static const String _savedLinkKey = 'local_admin_saved_link';
+  static const String _remoteAdminLinkKey = 'tailscale_admin_link';
 
   HttpServer? _server;
   String _accessKey = '';
   String _savedAdminLink = '';
+  String _remoteAdminLink = '';
   List<String> _localIpv4 = <String>[];
 
   bool get isRunning => _server != null;
   String get savedAdminLink => _savedAdminLink;
+  String get remoteAdminLink => _remoteAdminLink;
   List<String> get localIpv4 => List.unmodifiable(_localIpv4);
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _accessKey = prefs.getString(_keyKey) ?? '';
     _savedAdminLink = prefs.getString(_savedLinkKey) ?? '';
+    _remoteAdminLink = prefs.getString(_remoteAdminLinkKey) ?? '';
     if (_accessKey.isEmpty) {
       _accessKey = _newAccessKey();
       await prefs.setString(_keyKey, _accessKey);
@@ -70,6 +73,17 @@ class LocalLanService extends ChangeNotifier {
     _server = null;
     if (server != null) {
       await server.close(force: true);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setRemoteAdminLink(String link) async {
+    _remoteAdminLink = link.trim();
+    final prefs = await SharedPreferences.getInstance();
+    if (_remoteAdminLink.isEmpty) {
+      await prefs.remove(_remoteAdminLinkKey);
+    } else {
+      await prefs.setString(_remoteAdminLinkKey, _remoteAdminLink);
     }
     notifyListeners();
   }
@@ -115,7 +129,7 @@ class LocalLanService extends ChangeNotifier {
     if (key.isEmpty) return false;
 
     final registerUri = parsed.replace(
-      path: '/register',
+      path: _appendEndpoint(parsed.path, '/register'),
       queryParameters: <String, String>{'key': key},
     );
 
@@ -132,7 +146,7 @@ class LocalLanService extends ChangeNotifier {
               'token': token.trim(),
             }),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 8));
 
       if (response.statusCode != 200) return false;
       final body = jsonDecode(response.body);
@@ -149,21 +163,24 @@ class LocalLanService extends ChangeNotifier {
   }
 
   Future<bool> syncFromAdmin() async {
-    final parsed = _parseLink(_savedAdminLink);
+    final target = _remoteAdminLink.isNotEmpty
+        ? _remoteAdminLink
+        : _savedAdminLink;
+    final parsed = _parseLink(target);
     if (parsed == null) return false;
 
     final key = parsed.queryParameters['key'] ?? '';
     if (key.isEmpty) return false;
 
     final usersUri = parsed.replace(
-      path: '/users',
+      path: _appendEndpoint(parsed.path, '/users'),
       queryParameters: <String, String>{'key': key},
     );
 
     try {
       final response = await http
           .get(usersUri)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) return false;
 
       final decoded = jsonDecode(response.body);
@@ -188,6 +205,61 @@ class LocalLanService extends ChangeNotifier {
 
       await userRegistry.replaceUsers(users);
       return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> syncTokensToRemote() async {
+    if (_remoteAdminLink.isEmpty) return false;
+    final parsed = _parseLink(_remoteAdminLink);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final tokens = await LicenseService.instance.issuedTokens();
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/tokens'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const <String, String>{
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(<String, dynamic>{'tokens': tokens}),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return false;
+      final body = jsonDecode(response.body);
+      return body is Map<String, dynamic> && body['ok'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> checkRemoteAdmin() async {
+    if (_remoteAdminLink.isEmpty) return false;
+    final parsed = _parseLink(_remoteAdminLink);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/health'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 200;
     } catch (_) {
       return false;
     }
@@ -337,6 +409,7 @@ class LocalLanService extends ChangeNotifier {
       'issued': user.issuedAt.toIso8601String(),
       'activated': user.activatedAt.toIso8601String(),
       'expires': user.expiresAt?.toIso8601String(),
+      'token': user.token,
     };
   }
 
@@ -348,6 +421,7 @@ class LocalLanService extends ChangeNotifier {
   }) {
     request.response.statusCode = statusCode;
     request.response.headers.contentType = ContentType.json;
+    request.response.headers.set('access-control-allow-origin', '*');
     for (final entry in headers.entries) {
       request.response.headers.set(entry.key, entry.value);
     }
@@ -364,6 +438,12 @@ class LocalLanService extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  String _appendEndpoint(String basePath, String endpoint) {
+    final trimmed = basePath.replaceFirst(RegExp(r'/+$'), '');
+    if (trimmed.isEmpty || trimmed == '/') return endpoint;
+    return trimmed + endpoint;
   }
 
   String _newAccessKey() {
