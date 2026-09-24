@@ -2,7 +2,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
-import '../models/avatar_outfit.dart';
 import '../services/avatar_profile_service.dart';
 import '../screens/player_screen.dart';
 import '../widgets/rive_avatar_stage.dart';
