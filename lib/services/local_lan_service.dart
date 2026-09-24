@@ -931,6 +931,105 @@ final localLanService = LocalLanService();
     }
   }
 
+  Future<bool> syncPendingFromRemote() async {
+    final target =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : _savedAdminLink;
+    final parsed = _parseLink(target);
+    if (parsed == null) return false;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return false;
+
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/pending'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic> || decoded['ok'] != true) {
+        return false;
+      }
+
+      final raw = decoded['requests'];
+      if (raw is! List) return false;
+
+      _pendingRequests = raw
+          .whereType<Map<String, dynamic>>()
+          .map((item) => <String, dynamic>{
+                ...item,
+                'source': 'remote',
+              })
+          .toList(growable: false);
+      await _persistPendingRequests();
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> markPendingVerified(String phoneNumber) async {
+    final phone = phoneNumber.trim();
+    _pendingRequests = _pendingRequests
+        .map((item) {
+          if (item['phone']?.toString() != phone) return item;
+          return <String, dynamic>{
+            ...item,
+            'status': 'verified',
+          };
+        })
+        .toList(growable: false);
+    await _persistPendingRequests();
+    notifyListeners();
+  }
+
+  Future<void> removePending(String phoneNumber) async {
+    final phone = phoneNumber.trim();
+    _pendingRequests.removeWhere(
+      (item) => item['phone']?.toString() == phone,
+    );
+    await _persistPendingRequests();
+    notifyListeners();
+
+    final target =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : _savedAdminLink;
+    final parsed = _parseLink(target);
+    if (parsed == null) return;
+
+    final key = parsed.queryParameters['key'] ?? '';
+    if (key.isEmpty) return;
+
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/pending/resolve'),
+      queryParameters: <String, String>{'key': key},
+    );
+    try {
+      await http
+          .post(
+            uri,
+            headers: const <String, String>{
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(<String, String>{'phone': phone}),
+          )
+          .timeout(const Duration(seconds: 8));
+    } catch (_) {}
+  }
+
+  Future<void> _persistPendingRequests() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _pendingRequestsKey,
+      _pendingRequests.map((item) => jsonEncode(item)).toList(growable: false),
+    );
+  }
+
   Future<bool> registerUser({
     required String adminLink,
     required String name,
