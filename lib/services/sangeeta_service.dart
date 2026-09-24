@@ -52,6 +52,9 @@ class SangeetaService extends ChangeNotifier {
 
     await _tts.setSpeechRate(0.48);
     await _tts.setPitch(1.02);
+    try {
+      await _tts.awaitSpeakCompletion(true);
+    } catch (_) {}
 
     try {
       await _tts.setLanguage(languageCode);
@@ -151,25 +154,30 @@ class SangeetaService extends ChangeNotifier {
 
     final cleaned = _stripWakePhrase(command.toLowerCase());
 
-    if (_isAny(cleaned, const ['pause', 'pause music', 'music pause', 'stop music'])) {
+    if (cleaned.isEmpty || _isAny(cleaned, const ['hi', 'hello', 'hey'])) {
+      await _speak(_replyFor('ହଁ ଜାନ୍… Sangeeta ଏଠି ଅଛି। କଣ ଗୀତ ଚଳାଇବି?'));
+      return;
+    }
+
+    if (_isAny(cleaned, const ['pause', 'pause music', 'music pause', 'stop music', 'ବନ୍ଦ କର', 'ବନ୍ଦ କର ଗୀତ'])) {
       await audioHandler.pause();
       await _speak(_replyFor('ପାଉଜ୍ କରିଦେଲି।'));
       return;
     }
 
-    if (_isAny(cleaned, const ['resume', 'resume music', 'play music', 'continue', 'play this'])) {
+    if (_isAny(cleaned, const ['resume', 'resume music', 'play music', 'continue', 'play this', 'ପୁଣି ଚଳା'])) {
       await audioHandler.play();
       await _speak(_replyFor('ପୁଣି ଗୀତ ଚଳାଇଦେଲି।'));
       return;
     }
 
-    if (_isAny(cleaned, const ['next', 'next song', 'skip', 'skip song'])) {
+    if (_isAny(cleaned, const ['next', 'next song', 'skip', 'skip song', 'ପରବର୍ତ୍ତୀ ଗୀତ'])) {
       await audioHandler.skipToNext();
       await _speak(_replyFor('ପରବର୍ତ୍ତୀ ଗୀତ ଚଳାଇଦେଲି।'));
       return;
     }
 
-    if (_isAny(cleaned, const ['previous', 'previous song', 'back'])) {
+    if (_isAny(cleaned, const ['previous', 'previous song', 'back', 'ପୂର୍ବ ଗୀତ'])) {
       await audioHandler.skipToPrevious();
       await _speak(_replyFor('ପୂର୍ବ ଗୀତକୁ ଫେରାଇଦେଲି।'));
       return;
@@ -177,6 +185,21 @@ class SangeetaService extends ChangeNotifier {
 
     if (cleaned.contains('dance') || cleaned.contains('ନାଚ')) {
       await _speak(_replyFor('ଚଲ ତାହେଲେ Dance Mode ଖୋଲିଦେଉଛି। 💃'));
+      return;
+    }
+
+    if (cleaned.contains('thank') || cleaned.contains('ଧନ୍ୟବାଦ')) {
+      await _speak(_replyFor('ମୋତେ ଧନ୍ୟବାଦ କହିବା ଦରକାର ନାହିଁ ଜାନ୍… ଗୀତ ଉପଭୋଗ କର। 💛'));
+      return;
+    }
+
+    if (cleaned.contains('good morning') || cleaned.contains('ଶୁଭ ସକାଳ')) {
+      await _speak(_replyFor('ଶୁଭ ସକାଳ ଜାନ୍… ଗୋଟେ ଭଲ ଗୀତରେ ଦିନଟା ଆରମ୍ଭ କରିବା?'));
+      return;
+    }
+
+    if (cleaned.contains('good night') || cleaned.contains('ଶୁଭ ରାତ୍ରି')) {
+      await _speak(_replyFor('ଶୁଭ ରାତ୍ରି ଜାନ୍… ମିଠା ଗୀତ ଶୁଣି ଆରାମ କର।'));
       return;
     }
 
@@ -231,6 +254,10 @@ class SangeetaService extends ChangeNotifier {
       'hey darling',
       'hi darling',
       'hello darling',
+      'hey dhana',
+      'hi dhana',
+      'hello dhana',
+      'dhana',
       'sangeeta',
       'sweetheart',
       'baby',
@@ -279,7 +306,7 @@ class SangeetaService extends ChangeNotifier {
       case SangeetaPersonality.funny:
         return odia + ' ମଜା ହେବ! 😄';
       case SangeetaPersonality.musicExpert:
-        return 'Playback updated: ' + odia;
+        return odia;
     }
   }
 
