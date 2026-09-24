@@ -174,9 +174,7 @@ Phase 5 is now actively implemented for the interactive Sangeeta avatar and priv
 - Previous: Sangeeta moves to the Previous button.
 - Mini-player: a small Sangeeta follows play/pause state.
 - Wardrobe presets: Casual, Party, Romantic, Traditional Odia, Gym/Chill, Resort swimwear, Elegant satin nightwear.
-- Optional external Rive URL via the Rive Flutter runtime, with the built-in avatar as an offline fallback.
-
-Rive Flutter is an MIT-licensed open-source runtime for loading and controlling Rive animations in Flutter: https://github.com/rive-app/rive-flutter
+- Local Flutter avatar renderer; no external avatar service or remote animation file.
 
 ### Private activation
 
@@ -185,8 +183,19 @@ Rive Flutter is an MIT-licensed open-source runtime for loading and controlling 
 - Tokens can be bound to a recipient phone number.
 - Other phones enter the phone number and token to unlock the app until the token expires.
 
-The current activation gate is for private distribution, and the app contains no payment gateway, checkout, subscription purchase, or in-app billing flow.
+The current activation gate is for private distribution. Names, phone numbers, token records, and validity are stored only on the administrator phone. The app contains no payment gateway, checkout, subscription purchase, or in-app billing flow.
 
+
+## Mobile-only architecture
+
+- No Supabase.
+- No Vercel.
+- No cloud database.
+- No cloud avatar runtime.
+- No cloud analytics or user tracking.
+- User registry, activation state, avatar settings, favorites, playlists and downloads stay on the device.
+- GitHub is used only as the source-code repository and build automation; it is not an app runtime dependency.
+- Internet access is used only when a music/artwork source itself is remote; local/downloaded files remain available offline.
 
 ## Free-only distribution
 
