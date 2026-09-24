@@ -19,6 +19,7 @@ permissions = [
     '    <uses-permission android:name="android.permission.WAKE_LOCK" />',
     '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
     '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />',
+    '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />',
 ]
 for permission in permissions:
     permission_name = permission.split('android:name="')[1].split('"')[0]
