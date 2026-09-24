@@ -20,6 +20,7 @@ permissions = [
     '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />',
     '    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />',
     '    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />',
+    '    <uses-permission android:name="android.permission.RECORD_AUDIO" />',
 ]
 for permission in permissions:
     permission_name = permission.split('android:name="')[1].split('"')[0]
@@ -80,5 +81,19 @@ with Image.open(rendered).convert("RGBA") as source:
             out_dir / "ic_launcher.png"
         )
 
+stat_dir = ROOT / "android/app/src/main/res/drawable"
+stat_dir.mkdir(parents=True, exist_ok=True)
+(stat_dir / "ic_stat_sangeet.xml").write_text(
+    """<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3a7,7 0,0 0,-7 7v4a2,2 0,0 0,2 2h1v-6a4,4 0,0 1,8 0v6h1a2,2 0,0 0,2 -2v-4a7,7 0,0 0,-7 -7zM7,17h-1v3a1,1 0,0 0,1 1h2v-2h-2zM15,19v2h2a1,1 0,0 0,1 -1v-3h-1v2z"/>
+</vector>""",
+    encoding="utf-8",
+)
 rendered.unlink(missing_ok=True)
-print("AndroidManifest.xml and launcher icon prepared from vector artwork.")
+print("AndroidManifest.xml, launcher icon, and media notification icon prepared.")
