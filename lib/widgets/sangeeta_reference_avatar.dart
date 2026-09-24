@@ -62,7 +62,7 @@ class _SangeetaReferenceAvatarState extends State<SangeetaReferenceAvatar>
   Widget build(BuildContext context) {
     final t = _controller.value;
     final sway = widget.dancing ? 0.025 * math.sin(t * math.pi * 2) : 0.006 * math.sin(t * math.pi * 2);
-    final lift = widget.dancing ? -5 * math.max(0, math.sin(t * math.pi * 2)) : 0.0;
+    final lift = widget.dancing ? (-5 * math.max(0.0, math.sin(t * math.pi * 2))).toDouble() : 0.0;
 
     return AnimatedBuilder(
       animation: _controller,
