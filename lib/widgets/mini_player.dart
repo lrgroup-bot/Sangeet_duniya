@@ -2,10 +2,8 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
-import '../services/avatar_profile_service.dart';
+import '../theme/app_theme.dart';
 import '../screens/player_screen.dart';
-import '../widgets/rive_avatar_stage.dart';
-import '../widgets/sangeeta_avatar.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
@@ -19,92 +17,70 @@ class MiniPlayer extends StatelessWidget {
         if (item == null) return const SizedBox.shrink();
 
         return Material(
-          color: const Color(0xFF151515),
-          child: InkWell(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const PlayerScreen(),
-              ),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: ListenableBuilder(
-                        listenable: avatarProfileService,
-                        builder: (context, _) => RiveAvatarStage(
-                          outfit: avatarProfileService.outfit,
-                          pose: (audioHandler.playbackState.value.playing)
-                              ? SangeetaPose.dance
-                              : SangeetaPose.sit,
-                          size: 48,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        item.artUri?.toString() ?? '',
+          color: const Color(0xFF15130F),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      item.artUri?.toString() ?? '',
+                      width: 46,
+                      height: 46,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
                         width: 46,
                         height: 46,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          width: 46,
-                          height: 46,
-                          color: const Color(0x22FFC857),
-                          child: const Icon(Icons.music_note),
-                        ),
+                        color: const Color(0x222A200D),
+                        child: const Icon(Icons.music_note_rounded, color: AppTheme.gold),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const PlayerScreen()),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          Text(
-                            item.artist ?? 'Unknown artist',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
-                          ),
+                          Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                          Text(item.artist ?? 'Unknown artist', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white54, fontSize: 11)),
                         ],
                       ),
                     ),
-                    StreamBuilder<PlaybackState>(
-                      stream: audioHandler.playbackState,
-                      builder: (context, state) {
-                        final playing = state.data?.playing ?? false;
-                        return IconButton(
-                          tooltip: playing ? 'Pause' : 'Play',
-                          onPressed: playing
-                              ? audioHandler.pause
-                              : audioHandler.play,
-                          icon: Icon(
-                            playing
-                                ? Icons.pause_circle_filled
-                                : Icons.play_circle_fill,
-                            size: 34,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    tooltip: 'Previous',
+                    onPressed: audioHandler.skipToPrevious,
+                    icon: const Icon(Icons.skip_previous_rounded),
+                  ),
+                  StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, state) {
+                      final playing = state.data?.playing ?? false;
+                      return IconButton(
+                        tooltip: playing ? 'Pause' : 'Play',
+                        onPressed: playing ? audioHandler.pause : audioHandler.play,
+                        icon: Icon(
+                          playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                          color: AppTheme.gold,
+                          size: 34,
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Next',
+                    onPressed: audioHandler.skipToNext,
+                    icon: const Icon(Icons.skip_next_rounded),
+                  ),
+                ],
               ),
             ),
           ),

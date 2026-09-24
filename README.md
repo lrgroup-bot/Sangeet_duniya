@@ -226,3 +226,19 @@ The Android EQ pipeline uses just_audio's `AndroidEqualizer` / `AndroidLoudnessE
 LR's Sangeet_Duniya contains no advertising SDK or paid subscription flow in the app. It can provide an ad-free player interface for the sources we integrate directly. It does not bypass, remove, or defeat advertisements, paywalls, DRM, or access controls of third-party services.
 
 The available catalog therefore depends on the source's rights and API. The app is designed to add additional direct, permitted music sources without adding a cloud backend.
+
+
+## Optional Tailscale PC admin
+
+The app can use a Windows/Linux/macOS PC as a self-hosted remote admin server. The PC keeps user and token data in local JSON files; Tailscale provides the network path.
+
+- PC companion: `tools/tailscale_admin_server.py`
+- Local PC API port: 40426
+- Admin phone stores the PC ADMIN URL.
+- App users receive only the USER URL.
+- New owner-generated tokens are synchronized to the PC.
+- Same-Wi-Fi phone registration remains supported.
+
+Use **Tailscale Serve** when only your Tailscale-connected devices should access the service. Use **Tailscale Funnel** only when you intentionally want phones without Tailscale to reach the server; Funnel is public Internet exposure and has bandwidth limits. Tailscale currently lists a free Personal plan with up to 6 users and unlimited user devices; that 6-user limit is for Tailscale accounts, not LR's Sangeet_Duniya records. citeturn762669search0turn793466search1turn404717search1
+
+Setup guide: docs/TAILSCALE-PC-ADMIN.md

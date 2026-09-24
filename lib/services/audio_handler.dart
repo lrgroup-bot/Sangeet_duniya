@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
@@ -8,7 +9,9 @@ import '../data/demo_songs.dart';
 import '../models/equalizer_profile.dart';
 import '../models/song.dart';
 import 'equalizer_profile_service.dart';
+import 'avatar_profile_service.dart';
 import 'library_store.dart';
+import 'permission_service.dart';
 
 class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   MusicAudioHandler() {
@@ -28,12 +31,16 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
 
   final List<Song> _queue = <Song>[];
   int _currentIndex = 0;
+  AudioServiceShuffleMode _shuffleMode = AudioServiceShuffleMode.none;
+  AudioServiceRepeatMode _repeatMode = AudioServiceRepeatMode.none;
+  final Random _random = Random.secure();
 
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   bool get isPlaying => _player.playing;
 
   Future<void> playSong(Song song, {List<Song>? songs}) async {
+    unawaited(PermissionService.instance.requestNotifications());
     if (songs != null && songs.isNotEmpty) {
       _queue..clear()..addAll(songs);
       final index = _queue.indexWhere((item) => item.id == song.id);
@@ -62,6 +69,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     if (duration != null) mediaItem.add(item.copyWith(duration: duration));
 
     await _applyRecommendedEq(song);
+    await avatarProfileService.setOutfit(avatarProfileService.outfitForSong(song));
     await libraryStore.recordPlayed(song);
     await _player.play();
   }
@@ -125,7 +133,18 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToNext() async {
     if (_queue.isEmpty) _queue.addAll(demoSongs);
-    _currentIndex = (_currentIndex + 1) % _queue.length;
+    if (_repeatMode == AudioServiceRepeatMode.one) {
+      await _player.seek(Duration.zero);
+      await _player.play();
+      return;
+    }
+    if (_shuffleMode == AudioServiceShuffleMode.all && _queue.length > 1) {
+      var next = _random.nextInt(_queue.length);
+      if (next == _currentIndex) next = (_currentIndex + 1) % _queue.length;
+      _currentIndex = next;
+    } else {
+      _currentIndex = (_currentIndex + 1) % _queue.length;
+    }
     await playSong(_queue[_currentIndex], songs: _queue);
   }
 
@@ -134,6 +153,18 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     if (_queue.isEmpty) _queue.addAll(demoSongs);
     _currentIndex = (_currentIndex - 1 + _queue.length) % _queue.length;
     await playSong(_queue[_currentIndex], songs: _queue);
+  }
+
+  @override
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
+    _shuffleMode = shuffleMode;
+    _broadcastState(_player.playbackEvent);
+  }
+
+  @override
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+    _repeatMode = repeatMode;
+    _broadcastState(_player.playbackEvent);
   }
 
   void _broadcastState(PlaybackEvent event) {
@@ -158,6 +189,8 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
       queueIndex: _currentIndex,
+      shuffleMode: _shuffleMode,
+      repeatMode: _repeatMode,
     ));
   }
 

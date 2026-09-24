@@ -1,58 +1,11 @@
-import 'dart:async';
-
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
-import '../services/avatar_profile_service.dart';
-import 'rive_avatar_stage.dart';
-import 'sangeeta_avatar.dart';
+import '../theme/app_theme.dart';
 
-class InteractiveTransportControls extends StatefulWidget {
+class InteractiveTransportControls extends StatelessWidget {
   const InteractiveTransportControls({super.key});
-
-  @override
-  State<InteractiveTransportControls> createState() =>
-      _InteractiveTransportControlsState();
-}
-
-class _InteractiveTransportControlsState
-    extends State<InteractiveTransportControls> {
-  SangeetaPose _temporaryPose = SangeetaPose.idle;
-  Timer? _resetTimer;
-
-  @override
-  void dispose() {
-    _resetTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _previous() async {
-    setState(() => _temporaryPose = SangeetaPose.previous);
-    _resetLater();
-    await audioHandler.skipToPrevious();
-  }
-
-  Future<void> _next() async {
-    setState(() => _temporaryPose = SangeetaPose.next);
-    _resetLater();
-    await audioHandler.skipToNext();
-  }
-
-  Future<void> _toggle(PlaybackState? state) async {
-    if (state?.playing ?? false) {
-      await audioHandler.pause();
-    } else {
-      await audioHandler.play();
-    }
-  }
-
-  void _resetLater() {
-    _resetTimer?.cancel();
-    _resetTimer = Timer(const Duration(milliseconds: 850), () {
-      if (mounted) setState(() => _temporaryPose = SangeetaPose.idle);
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,115 +14,73 @@ class _InteractiveTransportControlsState
       builder: (context, snapshot) {
         final state = snapshot.data;
         final playing = state?.playing ?? false;
-        final pose = _temporaryPose != SangeetaPose.idle
-            ? _temporaryPose
-            : playing
-                ? SangeetaPose.dance
-                : SangeetaPose.sit;
+        final shuffle = state?.shuffleMode == AudioServiceShuffleMode.all;
+        final repeat = state?.repeatMode ?? AudioServiceRepeatMode.none;
 
-        return SizedBox(
-          height: 152,
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _TransportButton(
-                    icon: Icons.skip_previous_rounded,
-                    onPressed: _previous,
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  tooltip: shuffle ? 'Shuffle on' : 'Shuffle off',
+                  onPressed: () => audioHandler.setShuffleMode(
+                    shuffle ? AudioServiceShuffleMode.none : AudioServiceShuffleMode.all,
                   ),
-                  const SizedBox(width: 22),
-                  _TransportButton(
-                    icon: playing
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
-                    large: true,
-                    onPressed: () => _toggle(state),
+                  icon: Icon(Icons.shuffle_rounded, color: shuffle ? AppTheme.gold : Colors.white54),
+                ),
+                IconButton(
+                  tooltip: 'Previous',
+                  onPressed: audioHandler.skipToPrevious,
+                  icon: const Icon(Icons.skip_previous_rounded, size: 36),
+                ),
+                Container(
+                  width: 82,
+                  height: 82,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFFEAA2), Color(0xFFFFC857), Color(0xFFB56C08)],
+                    ),
                   ),
-                  const SizedBox(width: 22),
-                  _TransportButton(
-                    icon: Icons.skip_next_rounded,
-                    onPressed: _next,
-                  ),
-                ],
-              ),
-              IgnorePointer(
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 450),
-                  curve: Curves.easeOutBack,
-                  alignment: switch (pose) {
-                    SangeetaPose.previous => const Alignment(-.69, .06),
-                    SangeetaPose.next => const Alignment(.69, .06),
-                    SangeetaPose.sit => const Alignment(0, .06),
-                    _ => const Alignment(0, -.28),
-                  },
-                  child: ListenableBuilder(
-                    listenable: avatarProfileService,
-                    builder: (context, _) => RiveAvatarStage(
-                      outfit: avatarProfileService.outfit,
-                      pose: pose,
-                      size: 96,
+                  child: IconButton(
+                    onPressed: playing ? audioHandler.pause : audioHandler.play,
+                    icon: Icon(
+                      playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.black,
+                      size: 44,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+                IconButton(
+                  tooltip: 'Next',
+                  onPressed: audioHandler.skipToNext,
+                  icon: const Icon(Icons.skip_next_rounded, size: 36),
+                ),
+                IconButton(
+                  tooltip: repeat == AudioServiceRepeatMode.one
+                      ? 'Repeat one'
+                      : repeat == AudioServiceRepeatMode.all
+                          ? 'Repeat all'
+                          : 'Repeat off',
+                  onPressed: () {
+                    final next = repeat == AudioServiceRepeatMode.none
+                        ? AudioServiceRepeatMode.all
+                        : repeat == AudioServiceRepeatMode.all
+                            ? AudioServiceRepeatMode.one
+                            : AudioServiceRepeatMode.none;
+                    audioHandler.setRepeatMode(next);
+                  },
+                  icon: Icon(
+                    repeat == AudioServiceRepeatMode.one ? Icons.repeat_one_rounded : Icons.repeat_rounded,
+                    color: repeat == AudioServiceRepeatMode.none ? Colors.white54 : AppTheme.gold,
+                  ),
+                ),
+              ],
+            ),
+          ],
         );
       },
-    );
-  }
-}
-
-class _TransportButton extends StatelessWidget {
-  const _TransportButton({
-    required this.icon,
-    required this.onPressed,
-    this.large = false,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-  final bool large;
-
-  @override
-  Widget build(BuildContext context) {
-    final side = large ? 86.0 : 58.0;
-    return Container(
-      width: side,
-      height: side,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFFEAA2),
-            Color(0xFFFFC857),
-            Color(0xFFB56C08),
-          ],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x663F2A0A),
-            blurRadius: 18,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        iconSize: large ? 40 : 30,
-        color: Colors.black,
-        icon: Icon(icon),
-        tooltip: icon == Icons.skip_next_rounded
-            ? 'Next'
-            : icon == Icons.skip_previous_rounded
-                ? 'Previous'
-                : 'Play / Pause',
-      ),
     );
   }
 }

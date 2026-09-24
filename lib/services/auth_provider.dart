@@ -24,6 +24,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
+    await LicenseService.instance.loadActivatedRecord();
+
     isOwner = prefs.getBool(_ownerModeKey) ?? false;
     phoneNumber = prefs.getString(_phoneNumberKey) ?? '';
     userName = prefs.getString(_nameKey) ?? '';
@@ -41,7 +43,9 @@ class AuthProvider extends ChangeNotifier {
       final info = LicenseService.instance.validateToken(token);
       if (info != null) {
         license = info;
-        phoneNumber = info.phoneNumber;
+        if (info.phoneNumber.isNotEmpty) {
+          phoneNumber = info.phoneNumber;
+        }
         isActivated = true;
         _scheduleExpiry();
       } else {
@@ -54,13 +58,75 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> loginWithCredentials({
+    required String name,
+    required String phoneNumber,
+    required String tokenId,
+  }) async {
+    final cleanName = name.trim();
+    final cleanPhone = phoneNumber.trim();
+    final cleanToken = tokenId.trim();
+
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(cleanPhone)) return false;
+
+    if (LicenseService.instance.verifyOwnerCredentials(
+      phone: cleanPhone,
+      token: cleanToken,
+    )) {
+      return unlockOwnerMode(cleanToken);
+    }
+
+    if (cleanName.length < 2 || !RegExp(r'^\d{6}$').hasMatch(cleanToken)) {
+      return false;
+    }
+
+    final record = await localLanService.activateToken(
+      name: cleanName,
+      phoneNumber: cleanPhone,
+      token: cleanToken,
+    );
+    if (record == null) return false;
+
+    return activateFromRecord(
+      record,
+      phoneNumber: cleanPhone,
+      name: record.customerName.isNotEmpty ? record.customerName : cleanName,
+    );
+  }
+
+  Future<bool> activateFromRecord(
+    ActivationTokenRecord record, {
+    required String phoneNumber,
+    required String name,
+  }) async {
+    final cleanPhone = phoneNumber.trim();
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(cleanPhone)) return false;
+    if (record.phoneNumber != cleanPhone || record.isExpired) return false;
+
+    final prefs = await SharedPreferences.getInstance();
+    await LicenseService.instance.rememberActivatedRecord(record);
+    await prefs.setString(_licenseTokenKey, record.token);
+    await prefs.setString(_phoneNumberKey, cleanPhone);
+    await prefs.setString(_nameKey, name.trim());
+    await prefs.remove(_ownerModeKey);
+
+    license = record.toLicenseInfo(phoneOverride: cleanPhone);
+    this.phoneNumber = cleanPhone;
+    userName = name.trim();
+    isOwner = false;
+    isActivated = true;
+    _scheduleExpiry();
+    notifyListeners();
+    return true;
+  }
+
   Future<bool> activateWithToken(
     String token, {
     required String phoneNumber,
     String name = '',
   }) async {
     final cleanPhone = phoneNumber.trim();
-    if (cleanPhone.length < 7) return false;
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(cleanPhone)) return false;
 
     final info = LicenseService.instance.validateToken(token);
     if (info == null) return false;
@@ -95,21 +161,25 @@ class AuthProvider extends ChangeNotifier {
     license = null;
     isOwner = true;
     isActivated = true;
-    userName = '';
+    userName = 'Owner';
     await localLanService.start();
     notifyListeners();
     return true;
   }
 
-  Future<String?> generateToken(
+  Future<ActivationTokenRecord?> generateActivationToken(
     LicensePlan plan, {
-    String phoneNumber = '',
+    required String customerName,
+    required String phoneNumber,
   }) async {
     if (!isOwner) return null;
-    return LicenseService.instance.generateToken(
+    final record = await LicenseService.instance.generateActivationToken(
       plan,
+      customerName: customerName,
       phoneNumber: phoneNumber,
     );
+    await localLanService.syncTokensToRemote();
+    return record;
   }
 
   Future<void> signOut() async {
@@ -134,7 +204,7 @@ class AuthProvider extends ChangeNotifier {
   String get statusText {
     if (isOwner) return 'Owner device • Unlimited';
     if (!isActivated || license == null) return 'Activation required';
-    if (license!.isLifetime) return 'Ultimate • Lifetime';
+    if (license!.isLifetime) return 'Lifetime access';
     final remaining = license!.remaining;
     if (remaining == null) return license!.plan.label;
     final days = remaining.inDays < 1 ? 1 : remaining.inDays;

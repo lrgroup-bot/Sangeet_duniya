@@ -105,6 +105,7 @@ class _SangeetaAvatarPainter extends CustomPainter {
         AvatarOutfit.gymChill => const Color(0xFF2B6FA7),
         AvatarOutfit.resortSwimwear => const Color(0xFF238B97),
         AvatarOutfit.nightSatin => const Color(0xFF5A416F),
+        AvatarOutfit.formalSuit => const Color(0xFF171717),
       };
 
   Color get accent => switch (outfit) {
@@ -115,6 +116,7 @@ class _SangeetaAvatarPainter extends CustomPainter {
         AvatarOutfit.gymChill => const Color(0xFFAED2F0),
         AvatarOutfit.resortSwimwear => const Color(0xFF9EE4E7),
         AvatarOutfit.nightSatin => const Color(0xFFDCC9EB),
+        AvatarOutfit.formalSuit => const Color(0xFFCFCFCF),
       };
 
   @override

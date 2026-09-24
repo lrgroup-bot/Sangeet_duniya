@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../services/permission_service.dart';
 import '../theme/app_theme.dart';
-import '../services/avatar_profile_service.dart';
-import '../widgets/rive_avatar_stage.dart';
-import '../widgets/sangeeta_avatar.dart';
 import 'auth_gate.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -54,12 +51,13 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              ListenableBuilder(
-                listenable: avatarProfileService,
-                builder: (context, _) => RiveAvatarStage(
-                  outfit: avatarProfileService.outfit,
-                  pose: SangeetaPose.greeting,
-                  size: 240,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(38),
+                child: Image.asset(
+                  'assets/brand/lrs_3d_brand.jpg',
+                  width: 240,
+                  height: 240,
+                  fit: BoxFit.cover,
                 ),
               ),
               const SizedBox(height: 6),

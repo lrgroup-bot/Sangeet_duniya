@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from PIL import Image
-import cairosvg
 
 ROOT = Path(".")
 manifest = ROOT / "android/app/src/main/AndroidManifest.xml"
@@ -70,10 +69,12 @@ if "com.ryanheise.audioservice.AudioService" not in text:
 
 manifest.write_text(text, encoding="utf-8")
 
-# Generate launcher icons from the checked-in vector logo.
-svg = ROOT / "assets/brand/logo.svg"
+# Generate launcher icons from the approved 3D brand image.
+source_image = ROOT / "assets/brand/lrs_3d_brand.jpg"
 rendered = ROOT / "build_logo_1024.png"
-cairosvg.svg2png(url=str(svg), write_to=str(rendered), output_width=1024, output_height=1024)
+with Image.open(source_image).convert("RGBA") as source:
+    rendered_source = source.resize((1024, 1024), Image.Resampling.LANCZOS)
+    rendered_source.save(rendered)
 
 sizes = {
     "mipmap-mdpi": 48,

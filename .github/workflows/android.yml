@@ -1,18 +1,21 @@
 name: Android CI
 
+permissions:
+  contents: write
+
 concurrency:
   group: android-ci-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ main, tailscale-admin ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,32 +26,51 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Check Flutter
-        run: flutter --version
-
       - name: Generate Android platform
         run: flutter create --platforms=android --org com.lrs.sangeet .
 
-      - name: Install logo rendering tools
-        run: python3 -m pip install --disable-pip-version-check -q pillow cairosvg
+      - name: Prepare Android assets
+        run: |
+          python3 -m pip install --disable-pip-version-check -q pillow cairosvg
+          python3 tool/prepare_android.py
 
-      - name: Patch Android media service and launcher icon
-        run: python3 tool/prepare_android.py
+      - name: Validate PC tools
+        run: python3 -m py_compile tools/tailscale_admin_server.py
 
-      - name: Get packages
+      - name: Install dependencies
         run: flutter pub get
 
       - name: Analyze
         run: flutter analyze
 
-      - name: Unit tests
+      - name: Test
         run: flutter test
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Build release APK
+        run: flutter build apk --release
 
-      - name: Upload APK
+      - name: Calculate APK SHA256
+        run: sha256sum build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Prepare direct release asset
+        run: |
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk release/LRS-Sangeet-Duniya-v2.0.0.apk
+
+      - name: Upload CI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lrs-sangeet-duniya-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: LRS-Sangeet-Duniya-v2.0.0-release
+          path: release/LRS-Sangeet-Duniya-v2.0.0.apk
+          if-no-files-found: error
+
+      - name: Publish direct-download GitHub release
+        if: github.ref == 'refs/heads/tailscale-admin'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.0.0
+          target_commitish: tailscale-admin
+          name: LR's Sangeet_Duniya v2.0.0
+          generate_release_notes: true
+          make_latest: true
+          files: release/LRS-Sangeet-Duniya-v2.0.0.apk

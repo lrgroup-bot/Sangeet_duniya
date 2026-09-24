@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../models/equalizer_profile.dart';
 import '../models/song.dart';
+import '../models/avatar_outfit.dart';
 import '../services/audio_cleanup_service.dart';
 import '../services/avatar_profile_service.dart';
 import '../services/download_service.dart';
@@ -12,6 +13,8 @@ import '../services/library_store.dart';
 import '../theme/app_theme.dart';
 import '../widgets/interactive_transport_controls.dart';
 import 'dance_mode_screen.dart';
+import 'artist_screen.dart';
+import 'lyrics_screen.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import 'equalizer_screen.dart';
@@ -89,7 +92,28 @@ class PlayerScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(item.title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                Text(item.artist ?? 'Unknown artist', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withValues(alpha: .65), fontSize: 16)),
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ArtistScreen(
+                        artistName: item.artist ?? 'Unknown artist',
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Text(
+                      item.artist ?? 'Unknown artist',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppTheme.gold2.withValues(alpha: .88),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   (item.extras?['source']?.toString() ?? 'Local') + ' • ' + (item.extras?['quality']?.toString() ?? 'Source quality'),
@@ -139,7 +163,21 @@ class PlayerScreen extends StatelessWidget {
                 Wrap(
                   alignment: WrapAlignment.center, spacing: 12, runSpacing: 12,
                   children: [
-                    _PlayerAction(icon: Icons.lyrics_rounded, label: 'Lyrics', onTap: () => _showLyrics(context, song, item.title)),
+                    _PlayerAction(
+                      icon: Icons.lyrics_rounded,
+                      label: 'Lyrics',
+                      onTap: () {
+                        if (song == null) {
+                          _showLyrics(context, song, item.title);
+                          return;
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => LyricsScreen(song: song),
+                          ),
+                        );
+                      },
+                    ),
                     _PlayerAction(
                       icon: libraryStore.isDownloaded(item.id) ? Icons.download_done_rounded : Icons.download_rounded,
                       label: libraryStore.isDownloaded(item.id) ? 'Offline' : (song?.isDownloadable == false ? 'Stream only' : 'Download'),
@@ -147,11 +185,85 @@ class PlayerScreen extends StatelessWidget {
                     ),
                     _PlayerAction(icon: Icons.auto_fix_high_rounded, label: 'Clean Audio', onTap: () => _clean(context, song)),
                     _PlayerAction(icon: Icons.auto_awesome_rounded, label: 'Dance', onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => DanceModeScreen(category: category)))),
+                    _PlayerAction(
+                      icon: Icons.checkroom_rounded,
+                      label: 'Dress for song',
+                      onTap: () => _chooseOutfit(context, song, item.id),
+                    ),
                   ],
                 ),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _chooseOutfit(
+    BuildContext context,
+    Song? song,
+    String songId,
+  ) async {
+    if (song == null) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: const Color(0xFF11100E),
+      builder: (sheetContext) => SafeArea(
+        child: ListenableBuilder(
+          listenable: avatarProfileService,
+          builder: (context, _) => Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Choose Sangeeta outfit for this song',
+                  style: TextStyle(
+                    color: AppTheme.gold2,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...AvatarOutfit.values.map((outfit) {
+                  final selected =
+                      (avatarProfileService.savedSongOutfit(songId) ??
+                              avatarProfileService.outfitForSong(song)) ==
+                          outfit;
+                  return ListTile(
+                    leading: Icon(
+                      selected
+                          ? Icons.radio_button_checked_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      color: selected ? AppTheme.gold : Colors.white54,
+                    ),
+                    title: Text(outfit.label),
+                    trailing: const Icon(
+                      Icons.checkroom_rounded,
+                      color: AppTheme.gold,
+                    ),
+                    onTap: () async {
+                      await avatarProfileService.setSongOutfit(songId, outfit);
+                      if (context.mounted) Navigator.of(sheetContext).pop();
+                    },
+                  );
+                }),
+                TextButton(
+                  onPressed: () async {
+                    await avatarProfileService.clearSongOutfit(songId);
+                    await avatarProfileService.setOutfit(
+                      avatarProfileService.outfitForSong(song),
+                    );
+                    if (context.mounted) Navigator.of(sheetContext).pop();
+                  },
+                  child: const Text('Use automatic mood / default'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

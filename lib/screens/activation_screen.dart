@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/auth_provider.dart';
+import '../services/avatar_profile_service.dart';
 import '../services/local_lan_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/rive_avatar_stage.dart';
+import '../widgets/sangeeta_avatar.dart';
 
 class ActivationScreen extends StatefulWidget {
   const ActivationScreen({super.key});
@@ -12,276 +16,419 @@ class ActivationScreen extends StatefulWidget {
 }
 
 class _ActivationScreenState extends State<ActivationScreen> {
-  final nameController = TextEditingController();
-  final tokenController = TextEditingController();
-  final phoneController = TextEditingController(
-    text: authProvider.phoneNumber,
-  );
-  final adminLinkController = TextEditingController(
-    text: localLanService.savedAdminLink,
-  );
-  final pinController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _tokenController = TextEditingController();
 
-  bool busy = false;
-  String? error;
+  bool _busy = false;
+  String? _message;
+  bool _success = false;
+
+  bool get _validPhone =>
+      RegExp(r'^[6-9]\d{9}$').hasMatch(_phoneController.text.trim());
 
   @override
   void dispose() {
-    nameController.dispose();
-    tokenController.dispose();
-    phoneController.dispose();
-    adminLinkController.dispose();
-    pinController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    _tokenController.dispose();
     super.dispose();
   }
 
-  Future<void> _submitActivation() async {
+  Future<void> _login() async {
     FocusScope.of(context).unfocus();
-    final name = nameController.text.trim();
-    final phone = phoneController.text.trim();
-    final token = tokenController.text.trim();
-    final adminLink = adminLinkController.text.trim();
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final token = _tokenController.text.trim();
 
-    if (name.isEmpty || phone.length < 7 || token.isEmpty) {
-      setState(() => error = 'Enter your name, phone number and token.');
+    if (!_validPhone) {
+      _showMessage('Enter a valid 10-digit mobile number.', false);
       return;
     }
+
     setState(() {
-      busy = true;
-      error = null;
+      _busy = true;
+      _message = null;
     });
 
-    var registered = false;
-    if (adminLink.isNotEmpty) {
-      registered = await localLanService.registerUser(
-        adminLink: adminLink,
-        name: name,
-        phoneNumber: phone,
-        token: token,
-      );
-    }
-
-    final ok = await authProvider.activateWithToken(
-      token,
+    final ok = await authProvider.loginWithCredentials(
+      name: name.isEmpty ? 'Owner' : name,
       phoneNumber: phone,
-      name: name,
+      tokenId: token,
     );
 
     if (!mounted) return;
-
-    setState(() => busy = false);
+    setState(() => _busy = false);
 
     if (!ok) {
-      setState(() {
-        error = adminLink.isEmpty
-            ? 'Token validation failed or the token has expired.'
-            : registered
-                ? 'Token validation failed or the token has expired.'
-                : 'Could not contact the admin phone. You can still use this token when the admin has manually added you.';
-      });
+      _showMessage(
+        'Login failed. Check your name, phone number and 6-digit token.',
+        false,
+      );
     }
   }
 
-  Future<void> owner() async {
+  Future<void> _requestAccess() async {
     FocusScope.of(context).unfocus();
-    final ok = await authProvider.unlockOwnerMode(pinController.text);
-    if (!mounted) return;
-    if (!ok) {
-      setState(() => error = 'Owner PIN is incorrect.');
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (name.length < 2) {
+      _showMessage('Enter your full name.', false);
+      return;
     }
+    if (!_validPhone) {
+      _showMessage('Enter a valid 10-digit mobile number.', false);
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+
+    final ok = await localLanService.requestAccess(
+      name: name,
+      phoneNumber: phone,
+    );
+
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (ok) {
+      _showMessage(
+        'Access request sent. Your name and phone are now waiting for admin verification.',
+        true,
+      );
+    } else {
+      _showMessage(
+        'Could not reach the administrator. Same-Wi-Fi discovery or the configured Tailscale PC path is required.',
+        false,
+      );
+    }
+  }
+
+  void _showMessage(String message, bool success) {
+    setState(() {
+      _message = message;
+      _success = success;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.headphones_rounded,
-                    size: 72,
-                    color: AppTheme.gold,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF050505),
+              Color(0xFF171005),
+              Color(0xFF050505),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 28),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 40,
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "LR's Sangeet_Duniya",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Private Wi-Fi signup',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: .65),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Your name',
-                            style: TextStyle(
-                              fontSize: 19,
+                  child: Column(
+                    children: [
+                      _BrandHeader(),
+                      const SizedBox(height: 12),
+                      ListenableBuilder(
+                        listenable: avatarProfileService,
+                        builder: (context, _) => RiveAvatarStage(
+                          outfit: avatarProfileService.outfit,
+                          pose: SangeetaPose.listening,
+                          size: 190,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'ONE LOGIN • ADMIN + USER',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: AppTheme.gold2,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: 1.6,
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: nameController,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your name',
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'Mobile number',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: phoneController,
-                            keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              hintText: '+91XXXXXXXXXX',
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'Admin Wi-Fi link',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: adminLinkController,
-                            keyboardType: TextInputType.url,
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'http://192.168.x.x:40425/connect?key=...',
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Optional: same Wi-Fi lets this signup appear automatically on the admin dashboard. If you are not on Wi-Fi, the admin can add you manually against the token.',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: .60),
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'Token ID',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: tokenController,
-                            minLines: 3,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.characters,
-                            decoration: const InputDecoration(
-                              hintText: 'LRS1....',
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: busy ? null : _submitActivation,
-                              icon: const Icon(Icons.person_add_alt_1_rounded),
-                              label: Text(
-                                busy ? 'Signing up…' : 'Sign up & enter app',
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Your access is verified from the phone and token you enter.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: .62),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 20),
+                      _GlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Sign in',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'No cloud, no payment, no subscription. Signup is sent directly from this phone to the administrator phone over the same Wi-Fi.',
-                            style: TextStyle(
-                              color: AppTheme.gold2,
-                              fontWeight: FontWeight.w800,
+                            const SizedBox(height: 6),
+                            Text(
+                              'Admin: phone + admin token. User: name + phone + generated token.',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: .58),
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: ExpansionTile(
-                      title: const Text('Owner / Token generator'),
-                      subtitle: const Text(
-                        'Use on the administrator phone only',
-                      ),
-                      childrenPadding:
-                          const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                      children: [
-                        TextField(
-                          controller: pinController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Owner PIN',
-                          ),
+                            const SizedBox(height: 18),
+                            TextField(
+                              controller: _nameController,
+                              textCapitalization: TextCapitalization.words,
+                              decoration: const InputDecoration(
+                                labelText: 'Full name',
+                                hintText: 'Enter your name',
+                                prefixIcon: Icon(Icons.person_rounded),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _phoneController,
+                              keyboardType: TextInputType.phone,
+                              maxLength: 10,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(10),
+                              ],
+                              onChanged: (_) => setState(() {}),
+                              decoration: InputDecoration(
+                                labelText: 'Phone number',
+                                hintText: '10-digit mobile number',
+                                prefixIcon: const Icon(Icons.phone_rounded),
+                                counterText: '',
+                                errorText: _phoneController.text.isEmpty ||
+                                        _validPhone
+                                    ? null
+                                    : 'Enter exactly 10 digits.',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _tokenController,
+                              keyboardType: TextInputType.number,
+                              maxLength: 6,
+                              obscureText: true,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(6),
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'Token ID',
+                                hintText: '6-digit token',
+                                prefixIcon: Icon(Icons.vpn_key_rounded),
+                                counterText: '',
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: _busy ? null : _login,
+                                icon: _busy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.login_rounded),
+                                label: Text(_busy ? 'Checking…' : 'Continue'),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _busy ? null : _requestAccess,
+                                icon: const Icon(
+                                  Icons.mark_email_unread_rounded,
+                                ),
+                                label: const Text('Request Access'),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      if (_message != null) ...[
                         const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: owner,
-                            icon: const Icon(
-                              Icons.admin_panel_settings_rounded,
-                            ),
-                            label: const Text('Unlock owner mode'),
-                          ),
+                        _MessageBanner(
+                          message: _message!,
+                          success: _success,
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Admin verification keeps the customer name and phone bound to the generated token.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: .45),
+                          fontSize: 11,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  if (error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      error!,
-                      style: const TextStyle(color: Colors.redAccent),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Access validity comes from the token: 7 days, 30 days, 365 days, or Ultimate Lifetime.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'When the token expires, the app automatically returns to this signup page.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          height: 56,
+          width: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFF1A8), AppTheme.gold, Color(0xFF8B5200)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.gold.withValues(alpha: .22),
+                blurRadius: 28,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.headphones_rounded,
+            color: Colors.black,
+            size: 30,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "LR's",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.gold2,
+              ),
+            ),
+            Text(
+              'SANGEET_DUNIYA',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: .8,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xB8111111),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: AppTheme.gold.withValues(alpha: .20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .38),
+            blurRadius: 36,
+            spreadRadius: 4,
+          ),
+          BoxShadow(
+            color: AppTheme.gold.withValues(alpha: .07),
+            blurRadius: 26,
+            spreadRadius: -5,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _MessageBanner extends StatelessWidget {
+  const _MessageBanner({
+    required this.message,
+    required this.success,
+  });
+
+  final String message;
+  final bool success;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = success ? Icons.check_circle_rounded : Icons.info_rounded;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: success
+            ? const Color(0x3326C281)
+            : const Color(0x33FFB03A),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: success
+              ? const Color(0x6649D39B)
+              : AppTheme.gold.withValues(alpha: .35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            color: success ? const Color(0xFF77E4B8) : AppTheme.gold2,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                height: 1.35,
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

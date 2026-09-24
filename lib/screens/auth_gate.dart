@@ -17,6 +17,9 @@ class AuthGate extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
+
+        // Owner devices enter the real music app just like activated users.
+        // The admin console remains available from Home -> Owner Console.
         return authProvider.isActivated
             ? const ShellScreen()
             : const ActivationScreen();

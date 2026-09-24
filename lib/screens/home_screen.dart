@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/demo_songs.dart';
+import '../models/license_plan.dart';
 import '../main.dart';
 import '../models/song.dart';
-import '../services/avatar_profile_service.dart';
+import '../services/auth_provider.dart';
 import '../services/library_store.dart';
+import '../services/sangeeta_service.dart';
 import '../services/music_catalog_service.dart';
-import '../widgets/rive_avatar_stage.dart';
-import '../widgets/sangeeta_avatar.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
+import 'admin_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,145 @@ class _HomeScreenState extends State<HomeScreen> {
     _trendingFuture = musicCatalogService.trending(limit: 20);
   }
 
+  String _remainingText() {
+    if (authProvider.isOwner) return 'OWNER • Unlimited';
+    final license = authProvider.license;
+    if (!authProvider.isActivated || license == null) {
+      return 'Activation required';
+    }
+    if (license.isLifetime) return 'LIFETIME';
+    final remaining = license.remaining;
+    if (remaining == null || remaining.isNegative) return 'Expired';
+    final days = remaining.inDays;
+    final hours = remaining.inHours.remainder(24);
+    final minutes = remaining.inMinutes.remainder(60);
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} • ${days.toString().padLeft(2, '0')} days left';
+  }
+
+  String _formatDateTime(DateTime value) {
+    final v = value.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(v.day)}/${two(v.month)}/${v.year} ${two(v.hour)}:${two(v.minute)}';
+  }
+
+  Future<void> _showValidity() async {
+    final license = authProvider.license;
+    final expiresAt = license?.expiresAt;
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        final owner = authProvider.isOwner;
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.verified_rounded, color: Color(0xFFFFC857)),
+              SizedBox(width: 8),
+              Text('App Access'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                authProvider.userName.isEmpty ? "LR's Sangeet_Duniya" : authProvider.userName,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 14),
+              Text('Validity: ${owner ? 'Owner' : (license?.plan.label ?? 'Not activated')}'),
+              const SizedBox(height: 7),
+              Text(
+                'Time left: ${_remainingText()}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFFFFC857),
+                ),
+              ),
+              if (expiresAt != null) ...[
+                const SizedBox(height: 7),
+                Text('Valid until: ${_formatDateTime(expiresAt)}'),
+              ],
+            ],
+          ),
+          actions: [
+            if (owner)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(this.context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminDashboardScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Admin Console'),
+              ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showOwnerDialog() async {
+    final controller = TextEditingController();
+    String? error;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> unlock() async {
+              final ok = await authProvider.unlockOwnerMode(controller.text);
+              if (!mounted) return;
+              if (!ok) {
+                setDialogState(() => error = 'Incorrect owner PIN.');
+                return;
+              }
+              Navigator.of(dialogContext).pop();
+              await Navigator.of(this.context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AdminDashboardScreen(),
+                ),
+              );
+            }
+            return AlertDialog(
+              title: const Text('Owner Access'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                decoration: InputDecoration(
+                  labelText: 'Owner PIN',
+                  errorText: error,
+                  counterText: '',
+                ),
+                onSubmitted: (_) => unlock(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(onPressed: unlock, child: const Text('Unlock')),
+              ],
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,7 +176,21 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverAppBar(
             pinned: true,
             backgroundColor: Colors.black,
-            title: const Column(
+            leading: GestureDetector(
+              onTap: _showValidity,
+              onLongPress: _showOwnerDialog,
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/brand/lrs_3d_brand.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+          title: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -49,6 +204,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             actions: [
+              if (authProvider.isOwner)
+                IconButton(
+                  tooltip: 'Owner Console',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminDashboardScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.admin_panel_settings_rounded),
+                ),
               IconButton(
                 tooltip: 'Open player',
                 onPressed: () => Navigator.of(context).push(
@@ -63,32 +228,36 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-              child: ListenableBuilder(
-                listenable: avatarProfileService,
-                builder: (context, _) => Container(
-                  height: 185,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF211607), Color(0xFF0B0906)],
-                    ),
-                    border: Border.all(color: Color(0x66FFC857)),
+              child: Container(
+                height: 185,
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF211607), Color(0xFF0B0906)],
                   ),
-                  child: Row(
-                    children: [
-                      RiveAvatarStage(
-                        outfit: avatarProfileService.outfit,
-                        pose: SangeetaPose.greeting,
-                        size: 165,
+                  border: Border.all(color: Color(0x66FFC857)),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        'assets/brand/lrs_3d_brand.jpg',
+                        width: 165,
+                        height: 165,
+                        fit: BoxFit.cover,
                       ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Column(
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ListenableBuilder(
+                        listenable: sangeetaService,
+                        builder: (context, _) => Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'ହାଇ ଜାନ୍…',
                               style: TextStyle(
                                 color: Color(0xFFFFC857),
@@ -96,19 +265,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
-                            SizedBox(height: 6),
-                            Text(
-                              'ମୁଁ Sangeeta। ଗୀତ ଚଳାଇବି, ଖୋଜିବି ଏବଂ Auto EQ ଚୟନ କରିଦେବି।',
+                            const SizedBox(height: 6),
+                            const Text(
+                              'କହନ୍ତୁ “Hey Sangeeta”। ମୁଁ ଗୀତ ଖୋଜିବି ଏବଂ ଚଳାଇଦେବି।',
                               style: TextStyle(
                                 fontSize: 13,
                                 height: 1.35,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: IconButton.filledTonal(
+                                tooltip: 'Talk to Sangeeta',
+                                onPressed: sangeetaService.startListening,
+                                icon: Icon(
+                                  sangeetaService.isListening
+                                      ? Icons.mic_rounded
+                                      : Icons.mic_none_rounded,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),

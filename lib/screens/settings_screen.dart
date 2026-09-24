@@ -9,8 +9,6 @@ import '../theme/app_theme.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import '../widgets/sangeeta_logo.dart';
-import 'admin_dashboard_screen.dart';
-import 'license_admin_screen.dart';
 import 'equalizer_screen.dart';
 import 'sangeeta_preview_screen.dart';
 
@@ -83,22 +81,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Sangeeta language',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: sangeetaService.languageCode,
-                decoration: const InputDecoration(labelText: 'Voice language'),
-                items: const [
-                  DropdownMenuItem(value: 'or-IN', child: Text('Odia')),
-                  DropdownMenuItem(value: 'hi-IN', child: Text('Hindi')),
-                  DropdownMenuItem(value: 'en-IN', child: Text('English')),
-                ],
-                onChanged: (value) {
-                  if (value != null) sangeetaService.setLanguage(value);
-                },
+              const ListTile(
+                leading: Icon(Icons.language_rounded, color: AppTheme.gold),
+                title: Text('Sangeeta voice language'),
+                subtitle: Text('Odia only • wake and replies stay in Odia'),
               ),
               SwitchListTile(
                 title: const Text('Foreground wake mode'),
@@ -115,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Choose an original wardrobe preset. The live Sangeeta avatar is bundled inside the app and works without a cloud avatar service.',
+                'Choose the Sangeeta look used for music moods. The phone uses an animated reference stage; a connected PC can provide a rendered live-avatar video.',
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<AvatarOutfit>(
@@ -132,6 +118,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (value) {
                   if (value != null) avatarProfileService.setOutfit(value);
                 },
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<AvatarOutfit>(
+                initialValue: avatarProfileService.defaultOutfit,
+                decoration: const InputDecoration(
+                  labelText: 'Default dressed avatar',
+                ),
+                items: AvatarOutfit.values
+                    .map(
+                      (outfit) => DropdownMenuItem(
+                        value: outfit,
+                        child: Text(outfit.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    avatarProfileService.setDefaultOutfit(value);
+                  }
+                },
+              ),
+              SwitchListTile.adaptive(
+                title: const Text('Auto change outfit by song mood'),
+                subtitle: const Text(
+                  'Use the song category to select a saved mood outfit automatically.',
+                ),
+                value: avatarProfileService.autoMood,
+                onChanged: avatarProfileService.setAutoMood,
               ),
               const SizedBox(height: 14),
               Center(
@@ -186,65 +200,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     builder: (_) => const SangeetaPreviewScreen(),
                   ),
                 ),
-              ),
-              const Divider(height: 30),
-              const Text(
-                'Access & token tools',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 6),
-              if (authProvider.isOwner)
-                ListTile(
-                  leading: const Icon(
-                    Icons.dashboard_rounded,
-                    color: AppTheme.gold,
-                  ),
-                  title: const Text('Admin Dashboard'),
-                  subtitle: const Text(
-                    'Users, active tokens, expiry days and free distribution QR',
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const AdminDashboardScreen(),
-                    ),
-                  ),
-                ),
-              if (authProvider.isOwner)
-                ListTile(
-                  leading: const Icon(Icons.key_rounded, color: AppTheme.gold),
-                  title: const Text('License Manager'),
-                  subtitle: const Text('Generate 7-day, 30-day, 365-day or lifetime tokens'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const LicenseAdminScreen(),
-                    ),
-                  ),
-                ),
-              ListTile(
-                leading: Icon(
-                  authProvider.isOwner
-                      ? Icons.admin_panel_settings_rounded
-                      : Icons.lock_open_rounded,
-                ),
-                title: Text(
-                  authProvider.isOwner
-                      ? 'Owner device'
-                      : 'Activation status',
-                ),
-                subtitle: Text(
-                  authProvider.isOwner
-                      ? 'This phone can generate access tokens.'
-                      : authProvider.statusText,
-                ),
-                trailing: authProvider.isOwner
-                    ? IconButton(
-                        tooltip: 'Leave owner mode',
-                        onPressed: authProvider.signOut,
-                        icon: const Icon(Icons.logout_rounded),
-                      )
-                    : null,
               ),
             ],
           );
