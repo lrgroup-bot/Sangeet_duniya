@@ -118,7 +118,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Private Wi-Fi signup',
+                    'Private signup',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .65),
                     ),
@@ -163,7 +163,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                           ),
                           const SizedBox(height: 14),
                           const Text(
-                            'Admin Wi-Fi link',
+                            'Admin server link',
                             style: TextStyle(
                               fontSize: 19,
                               fontWeight: FontWeight.w900,
@@ -175,12 +175,12 @@ class _ActivationScreenState extends State<ActivationScreen> {
                             keyboardType: TextInputType.url,
                             decoration: const InputDecoration(
                               hintText:
-                                  'http://192.168.x.x:40425/connect?key=...',
+                                  'http(s)://admin-server/connect?key=...',
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Optional: same Wi-Fi lets this signup appear automatically on the admin dashboard. If you are not on Wi-Fi, the admin can add you manually against the token.',
+                            'Optional: use the admin phone link on the same Wi-Fi or a Tailscale PC user link. Remote users can register through Tailscale when the PC server is running.',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: .60),
                               fontSize: 12,
@@ -217,7 +217,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                           ),
                           const SizedBox(height: 14),
                           const Text(
-                            'No cloud, no payment, no subscription. Signup is sent directly from this phone to the administrator phone over the same Wi-Fi.',
+                            'No payment or subscription. Registration can use the local admin phone or the Tailscale PC server.',
                             style: TextStyle(
                               color: AppTheme.gold2,
                               fontWeight: FontWeight.w800,
