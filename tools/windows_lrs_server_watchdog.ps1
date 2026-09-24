@@ -23,7 +23,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $TaskName = "LRs Sangeet_Duniya PC Admin Watchdog"
-$StateRoot = Join-Path $env:ProgramData 'LRS-Sangeet-Duniya'
+$StateRoot = 'E:\LRS-Sangeet-Duniya'
 $LogFile = Join-Path $StateRoot 'watchdog.log'
 $ServerStdout = Join-Path $StateRoot 'server.stdout.log'
 $ServerStderr = Join-Path $StateRoot 'server.stderr.log'
