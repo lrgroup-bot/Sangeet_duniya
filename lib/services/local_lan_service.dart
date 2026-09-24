@@ -25,6 +25,7 @@ class LocalLanService extends ChangeNotifier {
   static const String _keyKey = 'local_admin_lan_key';
   static const String _savedLinkKey = 'local_admin_saved_link';
   static const String _remoteAdminLinkKey = 'tailscale_admin_link';
+  static const String _pendingRequestsKey = 'pending_access_requests_v1';
 
   HttpServer? _server;
   RawDatagramSocket? _discoverySocket;
@@ -32,11 +33,13 @@ class LocalLanService extends ChangeNotifier {
   String _savedAdminLink = '';
   String _remoteAdminLink = '';
   List<String> _localIpv4 = <String>[];
+  List<Map<String, dynamic>> _pendingRequests = <Map<String, dynamic>>[];
 
   bool get isRunning => _server != null;
   String get savedAdminLink => _savedAdminLink;
   String get remoteAdminLink => _remoteAdminLink;
   List<String> get localIpv4 => List.unmodifiable(_localIpv4);
+  List<Map<String, dynamic>> get pendingRequests => List.unmodifiable(_pendingRequests.map(Map<String, dynamic>.from));
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
