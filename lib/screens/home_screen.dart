@@ -232,3 +232,5 @@ class _MoodChip extends StatelessWidget {
           backgroundColor: const Color(0x22181818),
         ),
       );
+
+}
