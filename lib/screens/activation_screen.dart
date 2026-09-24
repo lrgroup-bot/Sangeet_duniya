@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/auth_provider.dart';
 import '../services/local_lan_service.dart';
@@ -12,83 +15,299 @@ class ActivationScreen extends StatefulWidget {
 }
 
 class _ActivationScreenState extends State<ActivationScreen> {
-  final nameController = TextEditingController();
-  final tokenController = TextEditingController();
-  final phoneController = TextEditingController(
-    text: authProvider.phoneNumber,
-  );
-  final adminLinkController = TextEditingController(
-    text: localLanService.savedAdminLink,
-  );
-  final pinController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
 
-  bool busy = false;
-  String? error;
+  Timer? _ownerTapTimer;
+  int _ownerTapCount = 0;
+  bool _busy = false;
+  String? _error;
 
   @override
   void dispose() {
-    nameController.dispose();
-    tokenController.dispose();
-    phoneController.dispose();
-    adminLinkController.dispose();
-    pinController.dispose();
+    _ownerTapTimer?.cancel();
+    _nameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _submitActivation() async {
-    FocusScope.of(context).unfocus();
-    final name = nameController.text.trim();
-    final phone = phoneController.text.trim();
-    final token = tokenController.text.trim();
-    final adminLink = adminLinkController.text.trim();
+  String _formatDateTime(DateTime value) {
+    final local = value.toLocal();
+    String two(int value) => value.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year} '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
 
-    if (name.isEmpty || phone.length < 7 || token.isEmpty) {
-      setState(() => error = 'Enter your name, phone number and token.');
+  bool get _validPhone =>
+      RegExp(r'^[6-9]\d{9}$').hasMatch(_phoneController.text.trim());
+
+  Future<void> _continue() async {
+    FocusScope.of(context).unfocus();
+
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    if (name.length < 2) {
+      setState(() => _error = 'Enter your full name.');
       return;
     }
-    setState(() {
-      busy = true;
-      error = null;
-    });
 
-    var registered = false;
-    if (adminLink.isNotEmpty) {
-      registered = await localLanService.registerUser(
-        adminLink: adminLink,
-        name: name,
-        phoneNumber: phone,
-        token: token,
-      );
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
+      setState(() => _error = 'Enter a valid 10-digit mobile number.');
+      return;
     }
 
-    final ok = await authProvider.activateWithToken(
-      token,
+    setState(() {
+      _error = null;
+      _busy = false;
+    });
+
+    final token = await _showTokenDialog();
+    if (!mounted || token == null) return;
+
+    setState(() => _busy = true);
+
+    final record = await localLanService.activateToken(
+      name: name,
+      phoneNumber: phone,
+      token: token,
+    );
+
+    if (!mounted) return;
+
+    if (record == null) {
+      setState(() {
+        _busy = false;
+        _error =
+            'Activation failed. Check the 6-digit token and make sure the admin device or configured PC server is reachable.';
+      });
+      return;
+    }
+
+    final activated = await authProvider.activateFromRecord(
+      record,
       phoneNumber: phone,
       name: name,
     );
 
     if (!mounted) return;
 
-    setState(() => busy = false);
+    setState(() => _busy = false);
 
-    if (!ok) {
-      setState(() {
-        error = adminLink.isEmpty
-            ? 'Token validation failed or the token has expired.'
-            : registered
-                ? 'Token validation failed or the token has expired.'
-                : 'Could not contact the admin phone. You can still use this token when the admin has manually added you.';
-      });
+    if (!activated) {
+      setState(() => _error = 'Could not save the activation on this phone.');
+      return;
+    }
+
+    await _showSuccessDialog(record);
+  }
+
+  Future<String?> _showTokenDialog() async {
+    final controller = TextEditingController();
+    String? error;
+    bool submitting = false;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> submit() async {
+              final value = controller.text.trim();
+              if (!RegExp(r'^\d{6}$').hasMatch(value)) {
+                setDialogState(
+                  () => error = 'Enter the 6-digit activation token.',
+                );
+                return;
+              }
+
+              setDialogState(() {
+                submitting = true;
+                error = null;
+              });
+
+              Navigator.of(dialogContext).pop(value);
+            }
+
+            return AlertDialog(
+              title: const Text('Activation Token'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Enter the 6-digit token shared with you.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .72),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    maxLength: 6,
+                    style: const TextStyle(
+                      fontSize: 30,
+                      letterSpacing: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(6),
+                    ],
+                    decoration: InputDecoration(
+                      counterText: '',
+                      labelText: 'Activation Token',
+                      hintText: '000000',
+                      errorText: error,
+                    ),
+                    onSubmitted: (_) {
+                      if (!submitting) submit();
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: submitting
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: submitting ? null : submit,
+                  child: submitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Activate'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    return result;
+  }
+
+  Future<void> _showSuccessDialog(dynamic record) async {
+    final expires = record.expiresAt as DateTime?;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.verified_rounded, color: AppTheme.gold),
+              SizedBox(width: 8),
+              Text('Activation Successful'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Welcome to LR's Sangeet_Duniya",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              _InfoRow('Validity', record.plan.label),
+              _InfoRow('Activated', _formatDateTime(record.activatedAt)),
+              _InfoRow(
+                'Valid until',
+                expires == null ? 'Lifetime' : _formatDateTime(expires),
+              ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Enter App'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleHiddenOwnerTap() {
+    _ownerTapCount += 1;
+    _ownerTapTimer?.cancel();
+    _ownerTapTimer = Timer(const Duration(seconds: 3), () {
+      _ownerTapCount = 0;
+    });
+
+    if (_ownerTapCount >= 7) {
+      _ownerTapCount = 0;
+      _showOwnerDialog();
     }
   }
 
-  Future<void> owner() async {
-    FocusScope.of(context).unfocus();
-    final ok = await authProvider.unlockOwnerMode(pinController.text);
-    if (!mounted) return;
-    if (!ok) {
-      setState(() => error = 'Owner PIN is incorrect.');
-    }
+  Future<void> _showOwnerDialog() async {
+    final controller = TextEditingController();
+    String? error;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> unlock() async {
+              final ok = await authProvider.unlockOwnerMode(controller.text);
+              if (!mounted) return;
+
+              if (ok) {
+                Navigator.of(dialogContext).pop();
+              } else {
+                setDialogState(() => error = 'Incorrect owner PIN.');
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('Owner Access'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                obscureText: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                decoration: InputDecoration(
+                  labelText: 'Owner PIN',
+                  errorText: error,
+                ),
+                onSubmitted: (_) => unlock(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: unlock,
+                  child: const Text('Unlock'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
   }
 
   @override
@@ -97,17 +316,31 @@ class _ActivationScreenState extends State<ActivationScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: Column(
                 children: [
-                  const Icon(
-                    Icons.headphones_rounded,
-                    size: 72,
-                    color: AppTheme.gold,
+                  GestureDetector(
+                    onTap: _handleHiddenOwnerTap,
+                    onLongPress: _showOwnerDialog,
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.gold.withValues(alpha: .08),
+                        border: Border.all(
+                          color: AppTheme.gold.withValues(alpha: .25),
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.headphones_rounded,
+                        size: 66,
+                        color: AppTheme.gold,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   const Text(
                     "LR's Sangeet_Duniya",
                     style: TextStyle(
@@ -116,172 +349,145 @@ class _ActivationScreenState extends State<ActivationScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
-                    'Private signup',
+                    'Enter your details to continue',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: .65),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 28),
                   Card(
                     child: Padding(
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             'Your name',
                             style: TextStyle(
-                              fontSize: 19,
+                              fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                           const SizedBox(height: 8),
                           TextField(
-                            controller: nameController,
+                            controller: _nameController,
                             textCapitalization: TextCapitalization.words,
+                            textInputAction: TextInputAction.next,
                             decoration: const InputDecoration(
-                              hintText: 'Enter your name',
+                              hintText: 'Enter full name',
+                              prefixIcon: Icon(Icons.person_outline_rounded),
                             ),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           const Text(
                             'Mobile number',
                             style: TextStyle(
-                              fontSize: 19,
+                              fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
                           const SizedBox(height: 8),
                           TextField(
-                            controller: phoneController,
+                            controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
-                              hintText: '+91XXXXXXXXXX',
+                            maxLength: 10,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+                            decoration: InputDecoration(
+                              hintText: '10-digit mobile number',
+                              prefixIcon: const Icon(Icons.phone_rounded),
+                              counterText: '',
+                              errorText: _phoneController.text.isEmpty ||
+                                      _validPhone
+                                  ? null
+                                  : 'Enter exactly 10 digits.',
                             ),
+                            onChanged: (_) => setState(() {}),
                           ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'Admin server link',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: adminLinkController,
-                            keyboardType: TextInputType.url,
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'http(s)://admin-server/connect?key=...',
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Optional: use the admin phone link on the same Wi-Fi or a Tailscale PC user link. Remote users can register through Tailscale when the PC server is running.',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: .60),
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'Token ID',
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: tokenController,
-                            minLines: 3,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.characters,
-                            decoration: const InputDecoration(
-                              hintText: 'LRS1....',
-                            ),
-                          ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 22),
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton.icon(
-                              onPressed: busy ? null : _submitActivation,
-                              icon: const Icon(Icons.person_add_alt_1_rounded),
+                              onPressed: _busy ? null : _continue,
+                              icon: _busy
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.arrow_forward_rounded),
                               label: Text(
-                                busy ? 'Signing up…' : 'Sign up & enter app',
+                                _busy ? 'Activating…' : 'Continue',
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          const Text(
-                            'No payment or subscription. Registration can use the local admin phone or the Tailscale PC server.',
-                            style: TextStyle(
-                              color: AppTheme.gold2,
-                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Card(
-                    child: ExpansionTile(
-                      title: const Text('Owner / Token generator'),
-                      subtitle: const Text(
-                        'Use on the administrator phone only',
-                      ),
-                      childrenPadding:
-                          const EdgeInsets.fromLTRB(18, 0, 18, 18),
-                      children: [
-                        TextField(
-                          controller: pinController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Owner PIN',
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: owner,
-                            icon: const Icon(
-                              Icons.admin_panel_settings_rounded,
-                            ),
-                            label: const Text('Unlock owner mode'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 12),
+                  if (_error != null) ...[
+                    const SizedBox(height: 14),
                     Text(
-                      error!,
+                      _error!,
                       style: const TextStyle(color: Colors.redAccent),
                       textAlign: TextAlign.center,
                     ),
                   ],
-                  const SizedBox(height: 18),
-                  const Text(
-                    'Access validity comes from the token: 7 days, 30 days, 365 days, or Ultimate Lifetime.',
+                  const SizedBox(height: 20),
+                  Text(
+                    'An activation token from the administrator is required.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: .55),
+                      fontSize: 12,
+                    ),
                     textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'When the token expires, the app automatically returns to this signup page.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12),
                   ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow(this.label, this.value);
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: .60),
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
       ),
     );
   }
