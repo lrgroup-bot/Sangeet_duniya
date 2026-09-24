@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -57,17 +57,8 @@ jobs:
       - name: Unit tests
         run: flutter test
 
-      - name: Build debug APK
-        run: flutter build apk --debug
-
       - name: Build release APK
         run: flutter build apk --release
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: lrs-sangeet-duniya-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload release APK
         uses: actions/upload-artifact@v4
