@@ -1,216 +1,89 @@
 import 'package:flutter/material.dart';
-
 import '../data/demo_songs.dart';
 import '../main.dart';
+import '../models/song.dart';
 import '../services/library_store.dart';
+import '../services/music_catalog_service.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  @override State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  @override
-  Widget build(BuildContext context) {
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Song>> _trendingFuture;
+  @override void initState() { super.initState(); _trendingFuture = musicCatalogService.trending(limit: 20); }
+
+  @override Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            pinned: true,
-            backgroundColor: Colors.black,
-            title: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "LR's Sangeet_Duniya",
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                Text(
-                  'Music made personal',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-            actions: [
-              IconButton(
-                tooltip: 'Open player',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PlayerScreen(),
-                  ),
-                ),
-                icon: const Icon(Icons.graphic_eq_rounded),
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF2B2110), Color(0xFF151515)],
-                  ),
-                  border: Border.all(color: const Color(0x55FFC857)),
-                ),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Sangeeta',
-                            style: TextStyle(
-                              color: Color(0xFFFFC857),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            'Your music companion is here.',
-                            style: TextStyle(
-                              fontSize: 24,
-                              height: 1.1,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Voice, Dance Mode and local library features are now wired in.',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 72,
-                      color: Color(0xFFFFC857),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            pinned: true, backgroundColor: Colors.black,
+            title: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text("LR's Sangeet_Duniya", style: TextStyle(fontWeight: FontWeight.w900)),
+              Text('Music made personal', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+            ]),
+            actions: [IconButton(tooltip: 'Open player', onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen())), icon: const Icon(Icons.graphic_eq_rounded))],
           ),
           const SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text(
-                'Quick moods',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-              ),
+              padding: EdgeInsets.fromLTRB(20, 14, 20, 18),
+              child: Card(child: Padding(padding: EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Sangeeta', style: TextStyle(color: Color(0xFFFFC857), fontSize: 15, fontWeight: FontWeight.w800)),
+                SizedBox(height: 6),
+                Text('Internet Music + Local Library', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                SizedBox(height: 8),
+                Text('Search, stream, save permitted tracks offline, and let Sangeeta choose Auto EQ on every new song.'),
+              ]))),
             ),
           ),
+          const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.fromLTRB(20, 4, 20, 12), child: Text('Quick moods', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)))),
+          SliverToBoxAdapter(child: SizedBox(height: 46, child: ListView(padding: const EdgeInsets.symmetric(horizontal: 20), scrollDirection: Axis.horizontal, children: const [
+            _MoodChip(label: 'Trending'), _MoodChip(label: 'Romantic'), _MoodChip(label: 'Party'), _MoodChip(label: 'Odia'), _MoodChip(label: 'Bhajan'),
+          ]))),
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 46,
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                scrollDirection: Axis.horizontal,
-                children: const [
-                  _MoodChip(label: 'Trending'),
-                  _MoodChip(label: 'Romantic'),
-                  _MoodChip(label: 'Party'),
-                  _MoodChip(label: 'Odia'),
-                  _MoodChip(label: 'Bhajan'),
-                ],
-              ),
+            child: FutureBuilder<List<Song>>(
+              future: _trendingFuture,
+              builder: (context, snapshot) {
+                final songs = snapshot.data ?? demoSongs;
+                if (snapshot.connectionState == ConnectionState.waiting) return const Padding(padding: EdgeInsets.all(30), child: Center(child: CircularProgressIndicator()));
+                if (songs.isEmpty) return const Padding(padding: EdgeInsets.all(20), child: Center(child: Text('No trending tracks found.')));
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 10),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Trending Music', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 10),
+                    ...songs.take(10).map((song) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SongCard(
+                        song: song,
+                        onTap: () async {
+                          await audioHandler.playSong(song, queue: songs);
+                          if (!context.mounted) return;
+                          Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen()));
+                        },
+                      ),
+                    )),
+                  ]),
+                );
+              },
             ),
           ),
           SliverToBoxAdapter(
             child: AnimatedBuilder(
               animation: libraryStore,
-              builder: (context, _) {
-                final category = libraryStore.historySongs.isNotEmpty
-                    ? libraryStore.historySongs.first.category
-                    : 'Trending';
-                final recommended = demoSongs
-                    .where((song) => song.category == category)
-                    .take(3)
-                    .toList();
-
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'For You • ' + category,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 88,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: recommended.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
-                          itemBuilder: (context, index) {
-                            final song = recommended[index];
-                            return SizedBox(
-                              width: 250,
-                              child: SongCard(
-                                song: song,
-                                onTap: () async {
-                                  await audioHandler.playSong(song);
-                                  if (!context.mounted) return;
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => const PlayerScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 24, 20, 12),
-              child: Text(
-                'Phase 1 test tracks',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              builder: (context, _) => Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+                child: Text(
+                  libraryStore.historySongs.isEmpty ? 'Your history stays on this phone.' : 'Recently played: ' + libraryStore.historySongs.first.title,
+                  style: TextStyle(color: Colors.white.withValues(alpha: .55), fontSize: 12),
+                ),
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            sliver: SliverList.separated(
-              itemCount: demoSongs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final song = demoSongs[index];
-                return SongCard(
-                  song: song,
-                  onTap: () async {
-                    await audioHandler.playSong(song);
-                    if (!context.mounted) return;
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PlayerScreen(),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 28)),
         ],
       ),
     );
@@ -219,18 +92,9 @@ class HomeScreen extends StatelessWidget {
 
 class _MoodChip extends StatelessWidget {
   const _MoodChip({required this.label});
-
   final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: Chip(
-        label: Text(label),
-        side: const BorderSide(color: Color(0x44FFC857)),
-        backgroundColor: const Color(0x22181818),
-      ),
-    );
-  }
+  @override Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 10),
+    child: Chip(label: Text(label), side: const BorderSide(color: Color(0x44FFC857)), backgroundColor: const Color(0x22181818)),
+  );
 }
