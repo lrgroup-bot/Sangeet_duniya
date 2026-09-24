@@ -5,11 +5,9 @@ import '../data/demo_songs.dart';
 import '../models/license_plan.dart';
 import '../main.dart';
 import '../models/song.dart';
-import '../services/avatar_profile_service.dart';
 import '../services/auth_provider.dart';
 import '../services/library_store.dart';
 import '../services/music_catalog_service.dart';
-import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_logo.dart';
 import '../widgets/sangeeta_avatar.dart';
 import '../widgets/song_card.dart';
@@ -201,6 +199,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             actions: [
+              if (authProvider.isOwner)
+                IconButton(
+                  tooltip: 'Owner Console',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminDashboardScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.admin_panel_settings_rounded),
+                ),
               IconButton(
                 tooltip: 'Open player',
                 onPressed: () => Navigator.of(context).push(
@@ -215,9 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-              child: ListenableBuilder(
-                listenable: avatarProfileService,
-                builder: (context, _) => Container(
+              child: Container(
                   height: 185,
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   decoration: BoxDecoration(
@@ -229,11 +235,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      RiveAvatarStage(
-                        outfit: avatarProfileService.outfit,
-                        pose: SangeetaPose.greeting,
-                        size: 165,
-                      ),
                       const SizedBox(width: 8),
                       const Expanded(
                         child: Column(
