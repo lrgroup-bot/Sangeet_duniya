@@ -9,6 +9,7 @@ import '../services/auth_provider.dart';
 import '../services/license_service.dart';
 import '../services/local_lan_service.dart';
 import '../services/user_registry_service.dart';
+import 'distribution_qr_screen.dart';
 import '../theme/app_theme.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -298,6 +299,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Admin Tools',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.qr_code_2_rounded, color: AppTheme.gold),
+                    title: const Text('Share Application'),
+                    subtitle: const Text('Android • iOS • Both link and QR sharing'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const DistributionQrScreen(),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.logout_rounded),
+                    title: const Text('Exit Owner Mode'),
+                    subtitle: const Text('Return this phone to normal customer login'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () async {
+                      await authProvider.signOut();
+                      if (!mounted) return;
+                      Navigator.of(context).popUntil((route) => route.isFirst);
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
