@@ -7,6 +7,14 @@ ROOT = Path(".")
 manifest = ROOT / "android/app/src/main/AndroidManifest.xml"
 text = manifest.read_text(encoding="utf-8")
 
+# Local same-Wi-Fi admin registration uses a private LAN HTTP endpoint.
+if 'android:usesCleartextTraffic=' not in text:
+    text = text.replace(
+        '<application',
+        '<application android:usesCleartextTraffic="true"',
+        1,
+    )
+
 if 'xmlns:tools=' not in text.split('>', 1)[0]:
     text = text.replace(
         '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
