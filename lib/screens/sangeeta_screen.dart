@@ -9,7 +9,6 @@ import 'settings_screen.dart';
 
 class SangeetaScreen extends StatefulWidget {
   const SangeetaScreen({super.key});
-
   @override
   State<SangeetaScreen> createState() => _SangeetaScreenState();
 }
@@ -18,10 +17,7 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
   @override
   void initState() {
     super.initState();
-    sangeetaService.init().then((_) {
-      if (!mounted || !sangeetaService.continuousWakeMode) return;
-      sangeetaService.startListening();
-    });
+    sangeetaService.init();
   }
 
   @override
@@ -31,82 +27,74 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
         title: const Text('Sangeeta'),
         actions: [
           IconButton(
-            tooltip: 'Avatar & voice settings',
+            tooltip: 'Settings',
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const SettingsScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
             ),
             icon: const Icon(Icons.settings_rounded),
           ),
         ],
       ),
       body: AnimatedBuilder(
-        animation: sangeetaService,
+        animation: Listenable.merge([sangeetaService, avatarProfileService]),
         builder: (context, _) {
           final pose = sangeetaService.isListening
               ? SangeetaPose.listening
               : sangeetaService.isSpeaking
                   ? SangeetaPose.speaking
-                  : SangeetaPose.greeting;
+                  : SangeetaPose.idle;
 
           return SafeArea(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
               children: [
                 const Text(
-                  'SANGEETA • VOICE COMPANION',
+                  'SANGEETA • ODIA VOICE COMPANION',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppTheme.gold,
-                    letterSpacing: 2.2,
+                    letterSpacing: 1.8,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'No chat box. Just speak naturally.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 16),
-                ListenableBuilder(
-                  listenable: avatarProfileService,
-                  builder: (context, _) => Container(
-                    height: 430,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(34),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0xFF261A08), Color(0xFF080807)],
-                      ),
-                      border: Border.all(
-                        color: AppTheme.gold.withValues(alpha: .55),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.gold.withValues(alpha: .12),
-                          blurRadius: 32,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.bottomCenter,
-                    child: RiveAvatarStage(
-                      outfit: avatarProfileService.outfit,
-                      pose: pose,
-                      size: 360,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 5),
                 Text(
                   sangeetaService.isListening
-                      ? 'I am listening…'
+                      ? 'Listening…'
                       : sangeetaService.isSpeaking
-                          ? 'I am speaking…'
-                          : 'Say “Hey Sangeeta”',
+                          ? 'Speaking…'
+                          : 'Tap the microphone to talk',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 430,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF241806), Color(0xFF080807)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                    border: Border.all(
+                      color: AppTheme.gold.withValues(alpha: .44),
+                    ),
+                  ),
+                  alignment: Alignment.bottomCenter,
+                  child: RiveAvatarStage(
+                    outfit: avatarProfileService.outfit,
+                    pose: pose,
+                    size: 365,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Text(
+                  sangeetaService.isListening
+                      ? 'ମୁଁ ଶୁଣୁଛି…'
+                      : sangeetaService.isSpeaking
+                          ? 'ମୁଁ କହୁଛି…'
+                          : 'ମାଇକ୍ ଦବାଇ କଥା କହନ୍ତୁ',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppTheme.gold2,
@@ -114,31 +102,18 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Wake phrases',
-                          style: TextStyle(
-                            color: AppTheme.gold,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Hey Sangeeta  •  Hi Sangeeta  •  Hey Dhana\n'
-                          'Sweetheart  •  Hey Sweetheart',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                const SizedBox(height: 10),
+                if (sangeetaService.transcript.isNotEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        sangeetaService.transcript,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
                 Center(
                   child: IconButton.filled(
                     style: IconButton.styleFrom(
@@ -146,30 +121,46 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                           ? AppTheme.gold2
                           : AppTheme.gold,
                       foregroundColor: Colors.black,
-                      padding: const EdgeInsets.all(22),
+                      padding: const EdgeInsets.all(24),
                     ),
-                    onPressed: () => sangeetaService.setWakeMode(
-                      !sangeetaService.continuousWakeMode,
-                    ),
+                    onPressed: sangeetaService.isListening
+                        ? sangeetaService.stopListening
+                        : sangeetaService.startListening,
                     icon: Icon(
                       sangeetaService.isListening
-                          ? Icons.mic_rounded
-                          : Icons.mic_none_rounded,
-                      size: 38,
+                          ? Icons.stop_rounded
+                          : Icons.mic_rounded,
+                      size: 40,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Center(
+                const SizedBox(height: 7),
+                const Center(
                   child: Text(
-                    sangeetaService.continuousWakeMode
-                        ? 'Voice wake mode ON'
-                        : 'Voice wake mode OFF',
-                    style: TextStyle(
-                      color: sangeetaService.continuousWakeMode
-                          ? AppTheme.gold
-                          : Colors.white54,
-                      fontWeight: FontWeight.w800,
+                    'Microphone is OFF until you press the button.',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(height: 17),
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Try saying',
+                          style: TextStyle(
+                            color: AppTheme.gold,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          '“play a song” • “next song” • “previous song” • “pause music”',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
                     ),
                   ),
                 ),

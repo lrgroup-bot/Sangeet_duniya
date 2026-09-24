@@ -7,6 +7,7 @@ import 'services/audio_handler.dart';
 import 'services/avatar_profile_service.dart';
 import 'services/auth_provider.dart';
 import 'services/library_store.dart';
+import 'services/live_avatar_service.dart';
 import 'services/equalizer_profile_service.dart';
 import 'services/local_lan_service.dart';
 import 'services/distribution_service.dart';
@@ -58,6 +59,7 @@ Future<void> main() async {
   await userRegistry.load();
   await distributionService.load();
   await localLanService.load();
+  await liveAvatarService.refresh();
   await authProvider.initialize();
 
   runApp(const SangeetDuniyaApp());
