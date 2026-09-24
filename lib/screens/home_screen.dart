@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/demo_songs.dart';
 import '../main.dart';
+import '../services/library_store.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
 
@@ -119,6 +120,63 @@ class HomeScreen extends StatelessWidget {
                   _MoodChip(label: 'Bhajan'),
                 ],
               ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: AnimatedBuilder(
+              animation: libraryStore,
+              builder: (context, _) {
+                final category = libraryStore.historySongs.isNotEmpty
+                    ? libraryStore.historySongs.first.category
+                    : 'Trending';
+                final recommended = demoSongs
+                    .where((song) => song.category == category)
+                    .take(3)
+                    .toList();
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'For You • ' + category,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 88,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: recommended.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final song = recommended[index];
+                            return SizedBox(
+                              width: 250,
+                              child: SongCard(
+                                song: song,
+                                onTap: () async {
+                                  await audioHandler.playSong(song);
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const PlayerScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
           const SliverToBoxAdapter(
