@@ -18,7 +18,9 @@ Phase 5 now includes the premium interactive Sangeeta layer plus a private activ
 - Optional external Rive runtime source.
 - Rive state-machine URL can be configured from Settings.
 - Private activation system with owner mode and 7-day, 30-day, 365-day, or Ultimate Lifetime tokens.
-- Annual private-use price label: ₹100 / year.
+- Payment disabled: no payment gateway, checkout, subscription purchase, or money collection.
+- Local Admin Dashboard with user name, phone, access period and days-left statistics.
+- Free offline QR/download link generation.
 
 ## External avatar runtime
 
@@ -29,6 +31,10 @@ Official runtime repository: https://github.com/rive-app/rive-flutter
 ## Licensing note
 
 The current token implementation is designed for private/personal distribution. Its signing secret is embedded in the application, so it should not be considered tamper-proof DRM. A future hardened release can move token issuance to a private service and use asymmetric signatures.
+
+## Free-only distribution
+
+The app does not collect money. The 7-day, 30-day, 365-day and Ultimate choices only control access validity.
 
 ## Remaining Phase 5 work
 
