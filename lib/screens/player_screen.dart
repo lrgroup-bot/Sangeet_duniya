@@ -198,9 +198,9 @@ class PlayerScreen extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 22),
-                StreamBuilder<MediaItem?>(
-                  stream: audioHandler.mediaItem,
-                  builder: (context, itemSnapshot) {
+                Builder(
+                  builder: (context) {
+                    final song = _songFor(item.id);
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -208,24 +208,23 @@ class PlayerScreen extends StatelessWidget {
                           icon: Icons.lyrics_rounded,
                           label: 'Lyrics',
                           onTap: () {
-                            final song = _songFor(item.id);
-                            return showDialog<void>(
+                            showDialog<void>(
                               context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text(item.title),
-                              content: SingleChildScrollView(
-                                child: Text(
-                                  song?.lyrics.isNotEmpty == true
-                                      ? song!.lyrics
-                                      : 'Lyrics are not available for this track yet.',
+                              builder: (context) => AlertDialog(
+                                title: Text(item.title),
+                                content: SingleChildScrollView(
+                                  child: Text(
+                                    song?.lyrics.isNotEmpty == true
+                                        ? song!.lyrics
+                                        : 'Lyrics are not available for this track yet.',
+                                  ),
                                 ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('OK'),
-                                ),
-                              ],
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
                               ),
                             );
                           },
@@ -244,7 +243,8 @@ class PlayerScreen extends StatelessWidget {
                           label: 'Dance',
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                              builder: (_) => DanceModeScreen(category: category),
+                              builder: (_) =>
+                                  DanceModeScreen(category: category),
                             ),
                           ),
                         ),
@@ -252,77 +252,4 @@ class PlayerScreen extends StatelessWidget {
                     );
                   },
                 ),
-              ],
-            );
-          },
-        ),
-      ),
-    );
-  }
 
-  Future<void> _download(BuildContext context, MediaItem item) async {
-    final song = _songFor(item.id);
-    if (song == null) return;
-
-    if (libraryStore.isDownloaded(song.id)) {
-      await libraryStore.removeDownload(song);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Offline copy removed.')),
-        );
-      }
-      return;
-    }
-
-    try {
-      await DownloadService.instance.download(song);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saved for offline playback.')),
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: $error')),
-        );
-      }
-    }
-  }
-
-  Song? _songFor(String id) {
-    for (final song in demoSongs) {
-      if (song.id == id) return song;
-    }
-    return null;
-  }
-
-  static String _format(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return minutes + ':' + seconds;
-  }
-}
-
-class _PlayerAction extends StatelessWidget {
-  const _PlayerAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        IconButton.filledTonal(onPressed: onTap, icon: Icon(icon)),
-        const SizedBox(height: 4),
-        Text(label),
-      ],
-    );
-  }
-}
