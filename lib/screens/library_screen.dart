@@ -5,6 +5,7 @@ import '../models/song.dart';
 import '../services/library_store.dart';
 import '../widgets/song_card.dart';
 import 'player_screen.dart';
+import 'downloads_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -50,6 +51,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
       appBar: AppBar(
         title: const Text('Library'),
         actions: [
+          IconButton(
+            tooltip: 'Downloads',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DownloadsScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.download_rounded),
+          ),
           IconButton(
             tooltip: 'New playlist',
             onPressed: _createPlaylist,
