@@ -25,9 +25,9 @@ The phase is not considered COMPLETED until CI/device checks confirm Android bui
 
 ## Test checklist
 
-- [ ] flutter analyze
-- [ ] flutter test
-- [ ] flutter build apk --debug
+- [x] flutter analyze
+- [x] flutter test
+- [x] flutter build apk --debug
 - [ ] install on Android device
 - [ ] play/pause
 - [ ] minimize app and verify audio continues
@@ -36,8 +36,8 @@ The phase is not considered COMPLETED until CI/device checks confirm Android bui
 
 ## Completion log
 
-Status: IN PROGRESS — CI verification branch running
+Status: BUILD VERIFIED — DEVICE TEST PENDING — CI verification branch running
 
 Completion date: —
 
-Notes: Initial implementation committed. Awaiting CI build and Android runtime verification.
+Notes: GitHub Actions verified analyze, unit tests and Android debug APK build. Real-device background playback, notification and lock-screen verification is still pending.
