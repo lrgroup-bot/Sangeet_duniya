@@ -35,6 +35,9 @@ jobs:
       - name: Patch Android media service and launcher icon
         run: python3 tool/prepare_android.py
 
+      - name: Check PC Tailscale server
+        run: python3 -m py_compile tools/tailscale_admin_server.py
+
       - name: Get packages
         run: flutter pub get
 
