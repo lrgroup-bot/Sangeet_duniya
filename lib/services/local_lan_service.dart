@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -10,16 +11,23 @@ import '../models/registered_user.dart';
 import 'license_service.dart';
 import 'user_registry_service.dart';
 
-/// Local admin bridge. It works on same Wi-Fi and can also talk to a
-/// Windows/Linux/macOS PC server exposed privately by Tailscale Serve or
-/// publicly by Tailscale Funnel.
+/// Local admin bridge. The admin phone exposes this service on the LAN.
+/// Customers automatically discover it; no admin URL is shown on the login page.
 class LocalLanService extends ChangeNotifier {
   static const int port = 40425;
+  static const int discoveryPort = 40424;
+
+  // Optional remote fallback for the Windows PC when Tailscale Serve is
+  // intentionally configured on this host/port.
+  static const String defaultRemotePcBase =
+      'https://desktop-k7hn8f9.tailad23c2.ts.net:8443';
+
   static const String _keyKey = 'local_admin_lan_key';
   static const String _savedLinkKey = 'local_admin_saved_link';
   static const String _remoteAdminLinkKey = 'tailscale_admin_link';
 
   HttpServer? _server;
+  RawDatagramSocket? _discoverySocket;
   String _accessKey = '';
   String _savedAdminLink = '';
   String _remoteAdminLink = '';
@@ -35,10 +43,12 @@ class LocalLanService extends ChangeNotifier {
     _accessKey = prefs.getString(_keyKey) ?? '';
     _savedAdminLink = prefs.getString(_savedLinkKey) ?? '';
     _remoteAdminLink = prefs.getString(_remoteAdminLinkKey) ?? '';
+
     if (_accessKey.isEmpty) {
       _accessKey = _newAccessKey();
       await prefs.setString(_keyKey, _accessKey);
     }
+
     await refreshNetworkInfo(notify: false);
     notifyListeners();
   }
@@ -62,15 +72,66 @@ class LocalLanService extends ChangeNotifier {
         cancelOnError: false,
       );
       await refreshNetworkInfo(notify: false);
+      await _startDiscoveryResponder();
     } catch (_) {
       _server = null;
     }
     notifyListeners();
   }
 
+  Future<void> _startDiscoveryResponder() async {
+    if (_discoverySocket != null) return;
+
+    try {
+      final socket = await RawDatagramSocket.bind(
+        InternetAddress.anyIPv4,
+        discoveryPort,
+        reuseAddress: true,
+      );
+      socket.broadcastEnabled = true;
+      _discoverySocket = socket;
+
+      socket.listen((event) {
+        if (event != RawSocketEvent.read) return;
+
+        Datagram? datagram;
+        try {
+          datagram = socket.receive();
+        } catch (_) {
+          return;
+        }
+        if (datagram == null) return;
+
+        final message = utf8.decode(datagram.data, allowMalformed: true).trim();
+        if (message != 'LRS_DISCOVER_V1') return;
+
+        final host =
+            _localIpv4.isNotEmpty ? _localIpv4.first : datagram.address.address;
+        final response = jsonEncode(<String, dynamic>{
+          'v': 1,
+          'app': "LR's Sangeet_Duniya",
+          'host': host,
+          'port': port,
+          'key': _accessKey,
+        });
+
+        socket.send(
+          utf8.encode(response),
+          datagram.address,
+          datagram.port,
+        );
+      });
+    } catch (_) {
+      _discoverySocket = null;
+    }
+  }
+
   Future<void> stop() async {
     final server = _server;
     _server = null;
+    _discoverySocket?.close();
+    _discoverySocket = null;
+
     if (server != null) {
       await server.close(force: true);
     }
@@ -95,6 +156,7 @@ class LocalLanService extends ChangeNotifier {
         includeLinkLocal: false,
       );
       final addresses = <String>[];
+
       for (final interface in interfaces) {
         for (final address in interface.addresses) {
           final value = address.address;
@@ -103,17 +165,213 @@ class LocalLanService extends ChangeNotifier {
           if (!addresses.contains(value)) addresses.add(value);
         }
       }
+
       _localIpv4 = addresses;
     } catch (_) {
       _localIpv4 = <String>[];
     }
+
     if (notify) notifyListeners();
   }
 
   String get connectionLink {
     final host = _localIpv4.isNotEmpty ? _localIpv4.first : '127.0.0.1';
-    return 'http://' + host + ':' + port.toString() + '/connect?key=' +
+    return 'http://' +
+        host +
+        ':' +
+        port.toString() +
+        '/connect?key=' +
         Uri.encodeQueryComponent(_accessKey);
+  }
+
+  /// Customer-side activation. First discovers an admin phone on the same
+  /// Wi-Fi. When unavailable, it falls back to the configured Tailscale PC.
+  Future<ActivationTokenRecord?> activateToken({
+    required String name,
+    required String phoneNumber,
+    required String token,
+  }) async {
+    final cleanName = name.trim();
+    final cleanPhone = phoneNumber.trim();
+    final cleanToken = token.trim();
+
+    if (cleanName.isEmpty ||
+        !RegExp(r'^[6-9]\d{9}$').hasMatch(cleanPhone) ||
+        !RegExp(r'^\d{6}$').hasMatch(cleanToken)) {
+      return null;
+    }
+
+    final localEndpoints = await _discoverAdminEndpoints();
+    for (final endpoint in localEndpoints) {
+      final record = await _activateAgainstBase(
+        endpoint,
+        key: endpoint.queryParameters['key'] ?? '',
+        name: cleanName,
+        phoneNumber: cleanPhone,
+        token: cleanToken,
+      );
+      if (record != null) return record;
+    }
+
+    return _activateAgainstRemotePc(
+      name: cleanName,
+      phoneNumber: cleanPhone,
+      token: cleanToken,
+    );
+  }
+
+  Future<List<Uri>> _discoverAdminEndpoints() async {
+    final results = <String, Uri>{};
+
+    try {
+      final socket = await RawDatagramSocket.bind(
+        InternetAddress.anyIPv4,
+        0,
+        reuseAddress: true,
+      );
+      socket.broadcastEnabled = true;
+
+      final subscription = socket.listen((event) {
+        if (event != RawSocketEvent.read) return;
+
+        Datagram? datagram;
+        try {
+          datagram = socket.receive();
+        } catch (_) {
+          return;
+        }
+        if (datagram == null) return;
+
+        try {
+          final decoded = jsonDecode(
+            utf8.decode(datagram.data, allowMalformed: true),
+          );
+          if (decoded is! Map<String, dynamic> || decoded['v'] != 1) {
+            return;
+          }
+
+          final host = decoded['host']?.toString() ?? '';
+          final valuePort = int.tryParse(decoded['port']?.toString() ?? '');
+          final key = decoded['key']?.toString() ?? '';
+          if (host.isEmpty || valuePort == null || key.isEmpty) return;
+
+          final uri = Uri(
+            scheme: 'http',
+            host: host,
+            port: valuePort,
+            path: '/activate',
+            queryParameters: <String, String>{'key': key},
+          );
+          results[uri.toString()] = uri;
+        } catch (_) {}
+      });
+
+      socket.send(
+        utf8.encode('LRS_DISCOVER_V1'),
+        InternetAddress('255.255.255.255'),
+        discoveryPort,
+      );
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await subscription.cancel();
+      socket.close();
+    } catch (_) {}
+
+    return results.values.toList(growable: false);
+  }
+
+  Future<ActivationTokenRecord?> _activateAgainstBase(
+    Uri base, {
+    required String key,
+    required String name,
+    required String phoneNumber,
+    required String token,
+  }) async {
+    if (key.isEmpty) return null;
+
+    final uri = base.replace(
+      path: _appendEndpoint(base.path, '/activate'),
+      queryParameters: <String, String>{'key': key},
+    );
+
+    try {
+      final response = await http
+          .post(
+            uri,
+            headers: const <String, String>{
+              'content-type': 'application/json',
+            },
+            body: jsonEncode(<String, String>{
+              'name': name,
+              'phone': phoneNumber,
+              'token': token,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+
+      return _recordFromActivationResponse(response);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<ActivationTokenRecord?> _activateAgainstRemotePc({
+    required String name,
+    required String phoneNumber,
+    required String token,
+  }) async {
+    final preferred =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : defaultRemotePcBase;
+    final parsed = _parseLink(preferred);
+    if (parsed == null) return null;
+
+    final base = parsed.replace(queryParameters: const <String, String>{});
+
+    try {
+      final keyUri = base.replace(
+        path: _appendEndpoint(base.path, '/public/user-key'),
+      );
+      final keyResponse = await http
+          .get(keyUri)
+          .timeout(const Duration(seconds: 5));
+      if (keyResponse.statusCode != 200) return null;
+
+      final keyBody = jsonDecode(keyResponse.body);
+      if (keyBody is! Map<String, dynamic> || keyBody['ok'] != true) {
+        return null;
+      }
+
+      final key = keyBody['key']?.toString() ?? '';
+      if (key.isEmpty) return null;
+
+      return _activateAgainstBase(
+        base,
+        key: key,
+        name: name,
+        phoneNumber: phoneNumber,
+        token: token,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  ActivationTokenRecord? _recordFromActivationResponse(
+    http.Response response,
+  ) {
+    if (response.statusCode != 200) return null;
+
+    try {
+      final body = jsonDecode(response.body);
+      if (body is! Map<String, dynamic> || body['ok'] != true) {
+        return null;
+      }
+      final activation = body['activation'];
+      if (activation is! Map<String, dynamic>) return null;
+      return ActivationTokenRecord.fromJson(activation);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<bool> registerUser({
@@ -163,9 +421,8 @@ class LocalLanService extends ChangeNotifier {
   }
 
   Future<bool> syncFromAdmin() async {
-    final target = _remoteAdminLink.isNotEmpty
-        ? _remoteAdminLink
-        : _savedAdminLink;
+    final target =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : _savedAdminLink;
     final parsed = _parseLink(target);
     if (parsed == null) return false;
 
@@ -212,13 +469,16 @@ class LocalLanService extends ChangeNotifier {
 
   Future<bool> syncTokensToRemote() async {
     if (_remoteAdminLink.isEmpty) return false;
+
     final parsed = _parseLink(_remoteAdminLink);
     if (parsed == null) return false;
 
     final key = parsed.queryParameters['key'] ?? '';
     if (key.isEmpty) return false;
 
+    final records = await LicenseService.instance.activationRecordsForSync();
     final tokens = await LicenseService.instance.issuedTokens();
+
     final uri = parsed.replace(
       path: _appendEndpoint(parsed.path, '/tokens'),
       queryParameters: <String, String>{'key': key},
@@ -231,9 +491,13 @@ class LocalLanService extends ChangeNotifier {
             headers: const <String, String>{
               'content-type': 'application/json',
             },
-            body: jsonEncode(<String, dynamic>{'tokens': tokens}),
+            body: jsonEncode(<String, dynamic>{
+              'activationTokens': records,
+              'tokens': tokens,
+            }),
           )
           .timeout(const Duration(seconds: 8));
+
       if (response.statusCode != 200) return false;
       final body = jsonDecode(response.body);
       return body is Map<String, dynamic> && body['ok'] == true;
@@ -306,6 +570,9 @@ class LocalLanService extends ChangeNotifier {
             'message': "Connected to LR's Sangeet_Duniya admin phone.",
           });
           return;
+        case '/activate':
+          await _handleActivate(request);
+          return;
         case '/register':
           await _handleRegister(request);
           return;
@@ -332,6 +599,64 @@ class LocalLanService extends ChangeNotifier {
     }
   }
 
+  Future<void> _handleActivate(HttpRequest request) async {
+    if (request.method != 'POST') {
+      _respond(request, 405, <String, dynamic>{'ok': false, 'error': 'POST required.'});
+      return;
+    }
+
+    final bodyText = await utf8.decoder.bind(request).join();
+    final decoded = jsonDecode(bodyText);
+    if (decoded is! Map<String, dynamic>) {
+      _respond(request, 400, <String, dynamic>{
+        'ok': false,
+        'error': 'Invalid activation payload.',
+      });
+      return;
+    }
+
+    final name = decoded['name']?.toString().trim() ?? '';
+    final phone = decoded['phone']?.toString().trim() ?? '';
+    final token = decoded['token']?.toString().trim() ?? '';
+
+    if (name.isEmpty ||
+        !RegExp(r'^[6-9]\d{9}$').hasMatch(phone) ||
+        !RegExp(r'^\d{6}$').hasMatch(token)) {
+      _respond(request, 400, <String, dynamic>{
+        'ok': false,
+        'error': 'Name, 10-digit phone number and 6-digit token are required.',
+      });
+      return;
+    }
+
+    final record = await LicenseService.instance.consumeActivationToken(
+      token,
+      phoneNumber: phone,
+    );
+    if (record == null) {
+      _respond(request, 403, <String, dynamic>{
+        'ok': false,
+        'error': 'Invalid, expired, already-used, or phone-bound token.',
+      });
+      return;
+    }
+
+    await userRegistry.saveUser(
+      name: name,
+      phoneNumber: phone,
+      planCode: record.plan.name,
+      issuedAt: record.issuedAt,
+      expiresAt: record.expiresAt,
+      token: record.token,
+      activatedAt: record.activatedAt ?? DateTime.now().toUtc(),
+    );
+
+    _respond(request, 200, <String, dynamic>{
+      'ok': true,
+      'activation': record.toJson(),
+    });
+  }
+
   Future<void> _handleRegister(HttpRequest request) async {
     if (request.method != 'POST') {
       _respond(request, 405, <String, dynamic>{
@@ -355,10 +680,12 @@ class LocalLanService extends ChangeNotifier {
     final phone = decoded['phone']?.toString().trim() ?? '';
     final token = decoded['token']?.toString().trim() ?? '';
 
-    if (name.isEmpty || phone.length < 7 || token.isEmpty) {
+    if (name.isEmpty ||
+        !RegExp(r'^[6-9]\d{9}$').hasMatch(phone) ||
+        token.isEmpty) {
       _respond(request, 400, <String, dynamic>{
         'ok': false,
-        'error': 'Name, phone and token are required.',
+        'error': 'Name, 10-digit phone number and token are required.',
       });
       return;
     }
@@ -448,7 +775,8 @@ class LocalLanService extends ChangeNotifier {
 
   String _newAccessKey() {
     final random = Random.secure();
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    const chars =
+        'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
     return List.generate(
       28,
       (_) => chars[random.nextInt(chars.length)],
