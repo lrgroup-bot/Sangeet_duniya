@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -88,4 +88,4 @@ jobs:
           name: "LR's Sangeet_Duniya v1.0.0"
           prerelease: false
           generate_release_notes: true
-          files: "LRS-Sangeet-Duniya-v1.0.0-alpha-${{ github.run_number }}.apk"
+          files: "LRS-Sangeet-Duniya-v1.0.0.apk"
