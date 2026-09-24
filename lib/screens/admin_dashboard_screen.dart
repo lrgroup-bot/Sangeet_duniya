@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/registered_user.dart';
+import '../services/license_service.dart';
 import '../services/distribution_service.dart';
 import '../services/local_lan_service.dart';
 import '../services/user_registry_service.dart';
@@ -21,6 +22,129 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Timer? _timer;
+
+  String _formatTime(DateTime value) {
+    final local = value.toLocal();
+    String two(int v) => v.toString().padLeft(2, '0');
+    return local.year.toString() +
+        '-' +
+        two(local.month) +
+        '-' +
+        two(local.day) +
+        ' ' +
+        two(local.hour) +
+        ':' +
+        two(local.minute) +
+        ':' +
+        two(local.second);
+  }
+
+  String _remainingLabel(RegisteredUser user) {
+    if (user.isLifetime) return 'Lifetime';
+    final remaining = user.remaining ?? Duration.zero;
+    if (remaining <= Duration.zero) return 'Expired';
+    final days = remaining.inDays;
+    final hours = remaining.inHours.remainder(24);
+    final minutes = remaining.inMinutes.remainder(60);
+    return days.toString() + 'd ' +
+        hours.toString() + 'h ' +
+        minutes.toString() +
+        'm left';
+  }
+
+  Future<void> _manualAddUser() async {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final tokenController = TextEditingController();
+
+    final values = await showDialog<List<String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Manual add user'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'User name'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Mobile number'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: tokenController,
+                minLines: 3,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(labelText: 'Existing token ID'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              context,
+              <String>[
+                nameController.text.trim(),
+                phoneController.text.trim(),
+                tokenController.text.trim(),
+              ],
+            ),
+            child: const Text('Add user'),
+          ),
+        ],
+      ),
+    );
+
+    nameController.dispose();
+    phoneController.dispose();
+    tokenController.dispose();
+
+    if (!mounted || values == null) return;
+
+    final name = values[0];
+    final phone = values[1];
+    final token = values[2];
+    final info = LicenseService.instance.validateToken(token);
+
+    if (name.isEmpty || phone.length < 7 || info == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name, phone or token is invalid/expired.')),
+      );
+      return;
+    }
+
+    if (info.phoneNumber.isNotEmpty && info.phoneNumber != phone) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This token is bound to a different phone number.')),
+      );
+      return;
+    }
+
+    await userRegistry.saveUser(
+      name: name,
+      phoneNumber: phone,
+      planCode: info.plan.name,
+      issuedAt: info.issuedAt,
+      activatedAt: DateTime.now().toUtc(),
+      expiresAt: info.expiresAt,
+      token: info.token,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User added with exact activation time.')),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -44,11 +168,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     super.dispose();
   }
 
-  String _daysLabel(RegisteredUser user) {
-    if (user.isLifetime) return 'Lifetime';
-    if (!user.isActive) return 'Expired';
-    return user.daysLeft.toString() + ' days left';
-  }
+  String _daysLabel(RegisteredUser user) => _remainingLabel(user);
 
   Color _statusColor(RegisteredUser user) {
     if (!user.isActive) return Colors.redAccent;
@@ -59,7 +179,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sangeet Admin Dashboard')),
+      appBar: AppBar(
+        title: const Text('Sangeet Admin Dashboard'),
+        actions: [
+          IconButton(
+            tooltip: 'Manual add user',
+            onPressed: _manualAddUser,
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+          ),
+        ],
+      ),
       body: ListenableBuilder(
         listenable: Listenable.merge([
           userRegistry,
