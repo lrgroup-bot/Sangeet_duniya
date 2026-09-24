@@ -37,6 +37,13 @@ jobs:
 
       - name: Check PC Tailscale server
         run: python3 -m py_compile tools/tailscale_admin_server.py
+      - name: Check Windows watchdog PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile('tools/windows_lrs_server_watchdog.ps1', [ref]$null, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | Format-List; exit 1 }
+          Write-Host 'Windows watchdog PowerShell syntax OK.'
 
       - name: Get packages
         run: flutter pub get
