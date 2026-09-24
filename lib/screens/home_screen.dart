@@ -176,13 +176,19 @@ class _HomeScreenState extends State<HomeScreen> {
             pinned: true,
             backgroundColor: Colors.black,
             leading: GestureDetector(
-            onTap: _showValidity,
-            onLongPress: _showOwnerDialog,
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: SangeetaLogo(size: 42, showTagline: false),
+              onTap: _showValidity,
+              onLongPress: _showOwnerDialog,
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/brand/lrs_3d_brand.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
             ),
-          ),
           title: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -233,7 +239,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(width: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset(
+                          'assets/brand/lrs_3d_brand.jpg',
+                          width: 165,
+                          height: 165,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                       const Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
