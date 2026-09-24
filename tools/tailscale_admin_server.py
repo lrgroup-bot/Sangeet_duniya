@@ -302,6 +302,20 @@ class Handler(BaseHTTPRequestHandler):
                 },
             )
 
+        if path == "/pending":
+            if not self.admin_ok():
+                return self.json(
+                    401,
+                    {"ok": False, "error": "Admin key required."},
+                )
+            return self.json(
+                200,
+                {
+                    "ok": True,
+                    "requests": self.store.get_pending(),
+                },
+            )
+
         return self.json(404, {"ok": False, "error": "Not found."})
 
     def do_POST(self):
