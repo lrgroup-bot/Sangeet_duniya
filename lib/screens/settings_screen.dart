@@ -9,7 +9,6 @@ import '../theme/app_theme.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import '../widgets/sangeeta_logo.dart';
-import 'admin_dashboard_screen.dart';
 import 'equalizer_screen.dart';
 import 'sangeeta_preview_screen.dart';
 
@@ -185,53 +184,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     builder: (_) => const SangeetaPreviewScreen(),
                   ),
                 ),
-              ),
-              const Divider(height: 30),
-              const Text(
-                'Access & token tools',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 6),
-              if (authProvider.isOwner)
-                ListTile(
-                  leading: const Icon(
-                    Icons.dashboard_rounded,
-                    color: AppTheme.gold,
-                  ),
-                  title: const Text('Admin Dashboard'),
-                  subtitle: const Text(
-                    'Customer details, six-digit tokens and exact validity',
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const AdminDashboardScreen(),
-                    ),
-                  ),
-                ),
-              ListTile(
-                leading: Icon(
-                  authProvider.isOwner
-                      ? Icons.admin_panel_settings_rounded
-                      : Icons.lock_open_rounded,
-                ),
-                title: Text(
-                  authProvider.isOwner
-                      ? 'Owner device'
-                      : 'Activation status',
-                ),
-                subtitle: Text(
-                  authProvider.isOwner
-                      ? 'This phone can generate access tokens.'
-                      : authProvider.statusText,
-                ),
-                trailing: authProvider.isOwner
-                    ? IconButton(
-                        tooltip: 'Leave owner mode',
-                        onPressed: authProvider.signOut,
-                        icon: const Icon(Icons.logout_rounded),
-                      )
-                    : null,
               ),
             ],
           );
