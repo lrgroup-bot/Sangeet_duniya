@@ -10,7 +10,6 @@ import '../services/download_service.dart';
 import '../services/equalizer_profile_service.dart';
 import '../services/library_store.dart';
 import '../theme/app_theme.dart';
-import '../widgets/dancing_sangeeta.dart';
 import '../widgets/interactive_transport_controls.dart';
 import 'dance_mode_screen.dart';
 import '../widgets/rive_avatar_stage.dart';
