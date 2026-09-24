@@ -21,3 +21,20 @@
 - Added animated Dance Mode with Party/Romantic/Devotional performance presets.
 - Added local favorites, history, playlists and offline downloads.
 - Added local test lyrics and history-based recommendations.
+
+
+## 0.5.0+6
+
+### Added
+- Interactive full-body Sangeeta avatar for player transport controls.
+- Live avatar poses for dance, pause/sit, next and previous.
+- Sangeeta wardrobe presets with a built-in animated renderer.
+- Optional Rive .riv network source and state-machine configuration.
+- Private owner mode and time-limited activation tokens.
+- License plans: 7 days, 30 days, 365 days, Ultimate Lifetime.
+- Annual private-use price label: ₹100 / year.
+- Activation and license manager screens.
+
+### Verification
+- Added unit coverage for license token generation/validation and avatar presets.
+- Real Android device verification remains required for animation performance and end-to-end activation behavior.
