@@ -9,10 +9,10 @@ Development rule: A phase is marked COMPLETED only after code is implemented and
 | Phase | Scope | Status | Testing |
 |---|---|---|---|
 | 1 | Foundation: UI + player + background audio | 🟡 BUILD VERIFIED | ✅ CI PASS; 📱 device test pending |
-| 2 | Sangeeta voice/chat assistant | NOT STARTED | Pending |
-| 3 | Sangeeta dancing avatar + wardrobe | NOT STARTED | Pending |
-| 4 | Music engine: downloads, lyrics, playlists, smart library | NOT STARTED | Pending |
-| 5 | APK build, optimization, release | NOT STARTED | Pending |
+| 2 | Sangeeta voice/chat assistant | 🟡 IMPLEMENTED | ✅ CI/device voice verification pending |
+| 3 | Sangeeta dancing avatar + wardrobe | 🟡 IMPLEMENTED | ✅ CI/device animation verification pending |
+| 4 | Music engine: downloads, lyrics, playlists, smart library | 🟡 IMPLEMENTED | ✅ CI/device offline verification pending |
+| 5 | APK build, optimization, release | 🎨 DESIGN ONLY | ⬜ Not started |
 
 ## Phase 1 — Foundation
 
@@ -156,3 +156,7 @@ GitHub Actions run 6 passed flutter analyze, flutter test, Android debug APK bui
 - Android launcher icons are generated from the checked-in vector logo during CI.
 - GitHub Actions run 17: analyze PASS, unit tests PASS, debug APK build PASS, artifact upload PASS.
 - Real Android device behavior still requires physical-device verification.
+
+## No-cloud design
+
+Phases 1–4 are designed to run without a cloud database or cloud storage. Background audio uses Android media services, Sangeeta uses the device speech-recognition/TTS services, and the library/download state is stored locally in the app. Network access is used only for remote music/test URLs and future provider integrations where their terms permit.
