@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/sangeeta_logo.dart';
 import 'shell_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,10 +14,12 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Timer? _timer;
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(milliseconds: 1400), _openHome);
+    _timer = Timer(const Duration(milliseconds: 1800), _openHome);
   }
 
   void _openHome() {
@@ -29,40 +32,44 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Container(
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [Color(0x33FFC857), Colors.transparent],
-            ),
-            border: Border.all(color: AppTheme.gold),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 0.9,
+            colors: [Color(0xFF2B1A05), AppTheme.black],
           ),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.headphones_rounded, size: 76, color: AppTheme.gold),
-              SizedBox(height: 16),
+              const SangeetaLogo(size: 300, showTagline: false),
+              const SizedBox(height: 10),
               Text(
-                "LR's",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.gold,
-                ),
+                "LR's Sangeet_Duniya",
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppTheme.gold2,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.3,
+                    ),
               ),
+              const SizedBox(height: 6),
               Text(
-                'Sangeet_Duniya',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                ),
+                'Your music. Your world. Powered by Sangeeta.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.65),
+                    ),
+                textAlign: TextAlign.center,
               ),
-              SizedBox(height: 8),
-              Text('Your music. Your world.'),
             ],
           ),
         ),
