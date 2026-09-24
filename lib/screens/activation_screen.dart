@@ -51,36 +51,8 @@ class _ActivationScreenState extends State<ActivationScreen> {
       _message = null;
     });
 
-    if (phone == '9338633303' && token == '333000') {
-      final ok = await authProvider.loginWithCredentials(
-        name: name.isEmpty ? 'Owner' : name,
-        phoneNumber: phone,
-        tokenId: token,
-      );
-      if (!mounted) return;
-      setState(() => _busy = false);
-      if (ok) return;
-      _showMessage('Admin login could not be completed.', false);
-      return;
-    }
-
-    if (name.length < 2) {
-      setState(() => _busy = false);
-      _showMessage('Enter your full name before signing in.', false);
-      return;
-    }
-
-    if (!RegExp(r'^\d{6}$').hasMatch(token)) {
-      setState(() => _busy = false);
-      _showMessage(
-        'Enter your 6-digit token, or use Request Access first.',
-        false,
-      );
-      return;
-    }
-
     final ok = await authProvider.loginWithCredentials(
-      name: name,
+      name: name.isEmpty ? 'Owner' : name,
       phoneNumber: phone,
       tokenId: token,
     );
@@ -366,7 +338,7 @@ class _BrandHeader extends StatelessWidget {
               ),
             ),
             Text(
-              'SANGEET_DIUNYA',
+              'SANGEET_DUNIYA',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
