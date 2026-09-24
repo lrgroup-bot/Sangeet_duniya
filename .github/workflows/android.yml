@@ -25,7 +25,10 @@ jobs:
       - name: Generate Android platform
         run: flutter create --platforms=android --org com.lrs.sangeet .
 
-      - name: Patch Android media service
+      - name: Install logo rendering tools
+        run: python3 -m pip install --disable-pip-version-check -q pillow cairosvg
+
+      - name: Patch Android media service and launcher icon
         run: python3 tool/prepare_android.py
 
       - name: Get packages
