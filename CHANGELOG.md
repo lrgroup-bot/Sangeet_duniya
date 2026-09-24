@@ -29,7 +29,7 @@
 - Interactive full-body Sangeeta avatar for player transport controls.
 - Live avatar poses for dance, pause/sit, next and previous.
 - Sangeeta wardrobe presets with a built-in animated renderer.
-- Optional Rive .riv network source and state-machine configuration.
+- Local Flutter avatar renderer; removed remote avatar source support.
 - Private owner mode and time-limited activation tokens.
 - License plans: 7 days, 30 days, 365 days, Ultimate Lifetime.
 - Payment and checkout removed; all access-validity choices are free.
@@ -40,3 +40,11 @@
 ### Verification
 - Added unit coverage for license token generation/validation and avatar presets.
 - Real Android device verification remains required for animation performance and end-to-end activation behavior.
+
+
+## 0.5.1+7
+- Removed the Rive network avatar path.
+- Removed the Rive package dependency and startup initialization.
+- Sangeeta avatar now runs locally on the phone.
+- Explicitly kept Supabase and Vercel out of the application runtime.
+- Admin records remain local to the owner device.
