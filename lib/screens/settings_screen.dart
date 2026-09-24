@@ -36,20 +36,22 @@ class SettingsScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 6),
-              ...SangeetaPersonality.values.map(
-                (mode) => RadioListTile<SangeetaPersonality>(
-                  title: Text(mode.label),
-                  subtitle: Text(
-                    mode == SangeetaPersonality.sweetheart
-                        ? 'Default • warm, affectionate Odia style'
-                        : 'Conversation style preset',
-                  ),
-                  value: mode,
-                  groupValue: sangeetaService.personality,
-                  onChanged: (value) {
-                    if (value != null) sangeetaService.setPersonality(value);
-                  },
+              DropdownButtonFormField<SangeetaPersonality>(
+                initialValue: sangeetaService.personality,
+                decoration: const InputDecoration(
+                  labelText: 'Personality mode',
                 ),
+                items: SangeetaPersonality.values
+                    .map(
+                      (mode) => DropdownMenuItem(
+                        value: mode,
+                        child: Text(mode.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) sangeetaService.setPersonality(value);
+                },
               ),
               const SizedBox(height: 10),
               const Text(
