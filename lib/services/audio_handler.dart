@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../data/demo_songs.dart';
 import '../models/song.dart';
+import 'library_store.dart';
 
 class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   MusicAudioHandler() {
@@ -21,12 +23,11 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
+  bool get isPlaying => _player.playing;
 
   Future<void> playSong(Song song) async {
     final index = demoSongs.indexWhere((item) => item.id == song.id);
-    if (index >= 0) {
-      _currentIndex = index;
-    }
+    if (index >= 0) _currentIndex = index;
 
     final item = MediaItem(
       id: song.id,
@@ -34,21 +35,25 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       title: song.title,
       artist: song.artist,
       artUri: Uri.tryParse(song.artworkUrl),
+      extras: <String, dynamic>{
+        'category': song.category,
+      },
     );
 
     mediaItem.add(item);
+    await _player.stop();
 
-    final duration = await _player.setAudioSource(
-      AudioSource.uri(
-        Uri.parse(song.streamUrl),
-        tag: item,
-      ),
-    );
+    final localPath = libraryStore.localPathFor(song.id);
+    final source = localPath != null && await File(localPath).exists()
+        ? AudioSource.file(localPath, tag: item)
+        : AudioSource.uri(Uri.parse(song.streamUrl), tag: item);
 
+    final duration = await _player.setAudioSource(source);
     if (duration != null) {
       mediaItem.add(item.copyWith(duration: duration));
     }
 
+    await libraryStore.recordPlayed(song);
     await _player.play();
   }
 
@@ -92,11 +97,10 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       MediaControl.skipToPrevious,
       if (_player.playing) MediaControl.pause else MediaControl.play,
       MediaControl.skipToNext,
-      MediaControl.stop,
     ];
 
     playbackState.add(
-      playbackState.value.copyWith(
+      PlaybackState(
         controls: controls,
         androidCompactActionIndices: const [0, 1, 2],
         processingState: processingState,
@@ -107,6 +111,11 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
         queueIndex: _currentIndex,
       ),
     );
+  }
+
+  @override
+  Future<void> onTaskRemoved() async {
+    // Keep audio service alive when the app task is swiped/removed.
   }
 
   Future<void> dispose() async {
