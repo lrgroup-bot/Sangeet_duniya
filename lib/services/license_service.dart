@@ -113,6 +113,8 @@ class LicenseService {
 
   // Retained only for compatibility with already-issued long tokens.
   static const _productSecret = 'LRS_SANGEET_DUNIYA_PRIVATE_2026';
+  // SHA-256 of the administrator phone number; the raw number is not stored in source.
+  static const ownerPhoneHash = '125fbbd0711ddd5be878895e6555067824714a88290b3c1ba4eca4af78bf627a';
   static const ownerPin = '333000';
   static const _issuedTokensKey = 'issued_tokens_v1';
   static const _issuedTokenRecordsKey = 'issued_token_records_v2';
@@ -361,6 +363,11 @@ class LicenseService {
   }
 
   bool verifyOwnerPin(String value) => value.trim() == ownerPin;
+
+  bool verifyOwnerCredentials({required String phone, required String token}) {
+    final phoneHash = sha256.convert(utf8.encode(phone.trim())).toString();
+    return phoneHash == ownerPhoneHash && token.trim() == ownerPin;
+  }
 
   String _sign(String payload) {
     return Hmac(
