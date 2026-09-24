@@ -10,7 +10,11 @@ class RegisteredUser {
 
   bool get isLifetime => expiresAt == null;
   bool get isActive => expiresAt == null || DateTime.now().toUtc().isBefore(expiresAt!);
-  int get daysLeft => expiresAt == null ? -1 : (expiresAt!.difference(DateTime.now().toUtc()).inDays).clamp(0, 999999);
+  int get daysLeft {
+    if (expiresAt == null) return -1;
+    final value = expiresAt!.difference(DateTime.now().toUtc()).inDays;
+    return value < 0 ? 0 : value;
+  }
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'phone': phoneNumber, 'plan': planCode, 'issued': issuedAt.toIso8601String(), 'expires': expiresAt?.toIso8601String(), 'token': token};
   factory RegisteredUser.fromJson(Map<String, dynamic> json) => RegisteredUser(
     id: json['id']?.toString() ?? '',
