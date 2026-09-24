@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../services/permission_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/sangeeta_logo.dart';
 import 'shell_screen.dart';
@@ -19,15 +20,14 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    PermissionService.instance.requestNotifications();
     _timer = Timer(const Duration(milliseconds: 1800), _openHome);
   }
 
   void _openHome() {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const ShellScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const ShellScreen()),
     );
   }
 
@@ -44,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen> {
         decoration: const BoxDecoration(
           gradient: RadialGradient(
             center: Alignment.center,
-            radius: 0.9,
+            radius: .9,
             colors: [Color(0xFF2B1A05), AppTheme.black],
           ),
         ),
@@ -59,14 +59,13 @@ class _SplashScreenState extends State<SplashScreen> {
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppTheme.gold2,
                       fontWeight: FontWeight.w900,
-                      letterSpacing: 0.3,
                     ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Your music. Your world. Powered by Sangeeta.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.65),
+                      color: Colors.white.withValues(alpha: .65),
                     ),
                 textAlign: TextAlign.center,
               ),
