@@ -100,9 +100,10 @@ class _InteractiveTransportControlsState
                   duration: const Duration(milliseconds: 450),
                   curve: Curves.easeOutBack,
                   alignment: switch (pose) {
-                    SangeetaPose.previous => const Alignment(-.70, -.24),
-                    SangeetaPose.next => const Alignment(.70, -.24),
-                    _ => const Alignment(0, -.18),
+                    SangeetaPose.previous => const Alignment(-.69, .06),
+                    SangeetaPose.next => const Alignment(.69, .06),
+                    SangeetaPose.sit => const Alignment(0, .06),
+                    _ => const Alignment(0, -.28),
                   },
                   child: ListenableBuilder(
                     listenable: avatarProfileService,
