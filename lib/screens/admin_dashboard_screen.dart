@@ -1,14 +1,48 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/registered_user.dart';
 import '../services/distribution_service.dart';
+import '../services/local_lan_service.dart';
 import '../services/user_registry_service.dart';
 import '../theme/app_theme.dart';
 import 'distribution_qr_screen.dart';
 import 'license_admin_screen.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    localLanService.start();
+    _refreshRemote();
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _refreshRemote();
+    });
+  }
+
+  Future<void> _refreshRemote() async {
+    await localLanService.refreshNetworkInfo();
+    await localLanService.syncFromAdmin();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   String _daysLabel(RegisteredUser user) {
     if (user.isLifetime) return 'Lifetime';
@@ -30,10 +64,11 @@ class AdminDashboardScreen extends StatelessWidget {
         listenable: Listenable.merge([
           userRegistry,
           distributionService,
+          localLanService,
         ]),
         builder: (context, _) {
           return RefreshIndicator(
-            onRefresh: userRegistry.load,
+            onRefresh: _refreshRemote,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               children: [
@@ -42,7 +77,7 @@ class AdminDashboardScreen extends StatelessWidget {
                     Expanded(
                       child: _StatCard(
                         icon: Icons.people_alt_rounded,
-                        title: 'Registered',
+                        title: 'Signed up',
                         value: userRegistry.totalCount.toString(),
                       ),
                     ),
@@ -84,7 +119,7 @@ class AdminDashboardScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Free distribution',
+                          'Admin Wi-Fi connection',
                           style: TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w900,
@@ -92,62 +127,96 @@ class AdminDashboardScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'QR target: ' + distributionService.downloadUrl,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: .65),
-                          ),
+                          localLanService.isRunning
+                              ? 'Share this link with a phone that is on the same Wi-Fi.'
+                              : 'Starting local admin service…',
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FilledButton.icon(
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) =>
-                                        const DistributionQrScreen(),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.qr_code_2_rounded),
-                                label: const Text('QR / Link'),
+                        if (localLanService.isRunning) ...[
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              color: Colors.white,
+                              child: QrImageView(
+                                data: localLanService.connectionLink,
+                                size: 190,
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) =>
-                                        const LicenseAdminScreen(),
-                                  ),
+                          ),
+                          const SizedBox(height: 10),
+                          SelectableText(
+                            localLanService.connectionLink,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(
+                                        text: localLanService.connectionLink,
+                                      ),
+                                    );
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Admin Wi-Fi link copied.',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.copy_rounded),
+                                  label: const Text('Copy link'),
                                 ),
-                                icon: const Icon(Icons.key_rounded),
-                                label: const Text('Create token'),
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 10),
+                              OutlinedButton.icon(
+                                onPressed: _refreshRemote,
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('Sync'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text(
-                  'Users & token validity',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'User sign-ups',
+                          style: TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'New sign-ups arrive automatically over the same Wi-Fi and refresh every 5 seconds while this dashboard is open.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: .70),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 if (userRegistry.users.isEmpty)
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(18),
                       child: Text(
-                        'No users yet. Create a token from License Manager and save the recipient name and phone number.',
+                        'No users have signed up yet. Generate a token first, then give the token and Admin Wi-Fi link to the user.',
                       ),
                     ),
                   )
@@ -170,7 +239,7 @@ class AdminDashboardScreen extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         subtitle: Text(
-                          user.phoneNumber + '\nPlan: ' + user.planCode,
+                          user.phoneNumber + '\nValidity: ' + user.planCode,
                         ),
                         isThreeLine: true,
                         trailing: Text(
@@ -184,12 +253,43 @@ class AdminDashboardScreen extends StatelessWidget {
                       ),
                     ),
                 const SizedBox(height: 8),
-                const Card(
+                Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Text(
-                      'This dashboard is fully local and uses no paid server. It shows records created on this administrator phone. Cross-device live counting would require a shared backend.',
-                      style: TextStyle(fontSize: 12),
+                      'Mobile-only architecture: no Supabase, no Vercel, no cloud database. The administrator phone is the local registration server.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: .70),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: const Icon(Icons.key_rounded, color: AppTheme.gold),
+                  title: const Text('License Manager'),
+                  subtitle: const Text(
+                    'Create free 7-day, 30-day, 365-day or lifetime tokens',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const LicenseAdminScreen(),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.qr_code_2_rounded,
+                    color: AppTheme.gold,
+                  ),
+                  title: const Text('Download QR'),
+                  subtitle: Text(distributionService.downloadUrl),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DistributionQrScreen(),
                     ),
                   ),
                 ),
