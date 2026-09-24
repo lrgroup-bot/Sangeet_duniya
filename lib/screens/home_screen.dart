@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final days = remaining.inDays;
     final hours = remaining.inHours.remainder(24);
     final minutes = remaining.inMinutes.remainder(60);
-    return '${days.toString().padLeft(2, '0')}d ${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')} • ${days.toString().padLeft(2, '0')} days left';
   }
 
   String _formatDateTime(DateTime value) {
