@@ -2,6 +2,11 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../services/download_service.dart';
+import '../services/library_store.dart';
+import '../theme/app_theme.dart';
+import '../widgets/dancing_sangeeta.dart';
+import 'dance_mode_screen.dart';
 
 class PlayerScreen extends StatelessWidget {
   const PlayerScreen({super.key});
@@ -12,13 +17,43 @@ class PlayerScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Now Playing'),
         actions: [
+          StreamBuilder<MediaItem?>(
+            stream: audioHandler.mediaItem,
+            builder: (context, snapshot) {
+              final item = snapshot.data;
+              if (item == null) return const SizedBox.shrink();
+              return AnimatedBuilder(
+                animation: libraryStore,
+                builder: (context, _) {
+                  final liked = libraryStore.isFavorite(item.id);
+                  return IconButton(
+                    tooltip: liked ? 'Remove favorite' : 'Favorite',
+                    onPressed: () async {
+                      final song = _songFor(item.id);
+                      if (song != null) await libraryStore.toggleFavorite(song);
+                    },
+                    icon: Icon(
+                      liked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: liked ? AppTheme.gold : null,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           IconButton(
-            tooltip: 'Dance Mode (Phase 3)',
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Sangeeta Dance Mode arrives in Phase 3.'),
-              ),
-            ),
+            tooltip: 'Dance Mode',
+            onPressed: () {
+              final item = audioHandler.mediaItem.valueOrNull;
+              final category = item?.extras?['category']?.toString() ?? 'Party';
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => DanceModeScreen(category: category),
+                ),
+              );
+            },
             icon: const Icon(Icons.auto_awesome_rounded),
           ),
         ],
@@ -28,16 +63,22 @@ class PlayerScreen extends StatelessWidget {
           stream: audioHandler.mediaItem,
           builder: (context, snapshot) {
             final item = snapshot.data;
-
             if (item == null) {
               return const Center(
                 child: Text('Choose a song from Home or Search.'),
               );
             }
 
+            final category = item.extras?['category']?.toString() ?? 'Trending';
+            final showDancer = category == 'Party' || category == 'Romantic';
+
             return ListView(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 30),
               children: [
+                if (showDancer) ...[
+                  DancingSangeeta(category: category, compact: true),
+                  const SizedBox(height: 14),
+                ],
                 AspectRatio(
                   aspectRatio: 1,
                   child: ClipRRect(
@@ -51,7 +92,7 @@ class PlayerScreen extends StatelessWidget {
                         child: const Icon(
                           Icons.music_note_rounded,
                           size: 110,
-                          color: Color(0xFFFFC857),
+                          color: AppTheme.gold,
                         ),
                       ),
                     ),
@@ -71,7 +112,7 @@ class PlayerScreen extends StatelessWidget {
                   item.artist ?? 'Unknown artist',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.65),
+                    color: Colors.white.withValues(alpha: .65),
                     fontSize: 16,
                   ),
                 ),
@@ -84,18 +125,16 @@ class PlayerScreen extends StatelessWidget {
                       builder: (context, durationSnapshot) {
                         final position = positionSnapshot.data ?? Duration.zero;
                         final duration = durationSnapshot.data ?? item.duration;
-                        final rawMax = (duration?.inMilliseconds ?? 1).toDouble();
-                        final maxSeconds = rawMax < 1 ? 1.0 : rawMax;
-                        final rawValue = position.inMilliseconds.toDouble();
-                        final value = rawValue.clamp(0.0, maxSeconds);
+                        final max = (duration?.inMilliseconds ?? 1).toDouble().clamp(1.0, double.infinity);
+                        final current = position.inMilliseconds.toDouble().clamp(0.0, max);
                         return Column(
                           children: [
                             Slider(
                               min: 0,
-                              max: maxSeconds,
-                              value: value,
-                              onChanged: (newValue) => audioHandler.seek(
-                                Duration(milliseconds: newValue.round()),
+                              max: max,
+                              value: current,
+                              onChanged: (value) => audioHandler.seek(
+                                Duration(milliseconds: value.round()),
                               ),
                             ),
                             Row(
@@ -117,38 +156,38 @@ class PlayerScreen extends StatelessWidget {
                   builder: (context, snapshot) {
                     final state = snapshot.data;
                     final playing = state?.playing ?? false;
-                    final processing = state?.processingState;
+                    final loading = state?.processingState == AudioProcessingState.loading ||
+                        state?.processingState == AudioProcessingState.buffering;
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
-                          iconSize: 38,
+                          iconSize: 40,
                           onPressed: audioHandler.skipToPrevious,
                           icon: const Icon(Icons.skip_previous_rounded),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 18),
                         FilledButton(
                           style: FilledButton.styleFrom(
                             shape: const CircleBorder(),
+                            backgroundColor: AppTheme.gold,
+                            foregroundColor: Colors.black,
                             padding: const EdgeInsets.all(22),
                           ),
-                          onPressed: processing == AudioProcessingState.loading ||
-                                  processing == AudioProcessingState.buffering
+                          onPressed: loading
                               ? null
                               : playing
                                   ? audioHandler.pause
                                   : audioHandler.play,
                           child: Icon(
-                            playing
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
+                            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                             size: 38,
                           ),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 18),
                         IconButton(
-                          iconSize: 38,
+                          iconSize: 40,
                           onPressed: audioHandler.skipToNext,
                           icon: const Icon(Icons.skip_next_rounded),
                         ),
@@ -157,39 +196,53 @@ class PlayerScreen extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 22),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _PlayerAction(
-                      icon: Icons.lyrics_rounded,
-                      label: 'Lyrics',
-                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Lyrics integration is planned for Phase 4.'),
-                        ),
-                      ),
-                    ),
-                    _PlayerAction(
-                      icon: Icons.download_rounded,
-                      label: 'Download',
-                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Download manager is planned for Phase 4.',
+                StreamBuilder<MediaItem?>(
+                  stream: audioHandler.mediaItem,
+                  builder: (context, itemSnapshot) {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _PlayerAction(
+                          icon: Icons.lyrics_rounded,
+                          label: 'Lyrics',
+                          onTap: () => showDialog<void>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text(item.title),
+                              content: const Text(
+                                'Lyrics provider will be connected in the music-source phase. '
+                                'This Phase 4 build keeps the player free and local-first.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    _PlayerAction(
-                      icon: Icons.auto_awesome_rounded,
-                      label: 'Dance',
-                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Dance Mode is planned for Phase 3.'),
+                        _PlayerAction(
+                          icon: libraryStore.isDownloaded(item.id)
+                              ? Icons.download_done_rounded
+                              : Icons.download_rounded,
+                          label: libraryStore.isDownloaded(item.id)
+                              ? 'Offline'
+                              : 'Download',
+                          onTap: () => _download(context, item),
                         ),
-                      ),
-                    ),
-                  ],
+                        _PlayerAction(
+                          icon: Icons.auto_awesome_rounded,
+                          label: 'Dance',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => DanceModeScreen(category: category),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             );
@@ -199,10 +252,56 @@ class PlayerScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _download(BuildContext context, MediaItem item) async {
+    final song = _songFor(item.id);
+    if (song == null) return;
+
+    if (libraryStore.isDownloaded(song.id)) {
+      await libraryStore.removeDownload(song);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Offline copy removed.')),
+        );
+      }
+      return;
+    }
+
+    try {
+      await DownloadService.instance.download(song);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved for offline playback.')),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $error')),
+        );
+      }
+    }
+  }
+
+  dynamic _songFor(String id) {
+    for (final song in libraryStore.favorites) {
+      if (song.id == id) return song;
+    }
+    for (final song in libraryStore.downloads) {
+      if (song.id == id) return song;
+    }
+    // Demo catalog lookup keeps the player independent of persistence state.
+    for (final song in _allSongs) {
+      if (song.id == id) return song;
+    }
+    return null;
+  }
+
+  static final _allSongs = <dynamic>[];
+
   static String _format(Duration duration) {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
+    return minutes + ':' + seconds;
   }
 }
 
