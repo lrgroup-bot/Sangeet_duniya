@@ -160,3 +160,30 @@ GitHub Actions run 6 passed flutter analyze, flutter test, Android debug APK bui
 ## No-cloud design
 
 Phases 1–4 are designed to run without a cloud database or cloud storage. Background audio uses Android media services, Sangeeta uses the device speech-recognition/TTS services, and the library/download state is stored locally in the app. Network access is used only for remote music/test URLs and future provider integrations where their terms permit.
+
+## Phase 5 current implementation
+
+Phase 5 is now actively implemented for the interactive Sangeeta avatar and private activation layer.
+
+### Interactive Sangeeta player
+
+- Full-body original Sangeeta avatar.
+- Play: Sangeeta dances above the central control.
+- Pause: Sangeeta uses a seated pose on the central control.
+- Next: Sangeeta moves to the Next button.
+- Previous: Sangeeta moves to the Previous button.
+- Mini-player: a small Sangeeta follows play/pause state.
+- Wardrobe presets: Casual, Party, Romantic, Traditional Odia, Gym/Chill, Resort swimwear, Elegant satin nightwear.
+- Optional external Rive URL via the Rive Flutter runtime, with the built-in avatar as an offline fallback.
+
+Rive Flutter is an MIT-licensed open-source runtime for loading and controlling Rive animations in Flutter: https://github.com/rive-app/rive-flutter
+
+### Private activation
+
+- Owner mode on the administrator phone.
+- Owner can generate 7-day, 30-day, 365-day, or Ultimate Lifetime tokens.
+- Tokens can be bound to a recipient phone number.
+- Other phones enter the phone number and token to unlock the app until the token expires.
+- Annual price label in the UI: ₹100/year.
+
+The current license gate is intended for personal/private distribution rather than tamper-proof commercial DRM.
