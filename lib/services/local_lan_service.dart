@@ -314,6 +314,7 @@ class LocalLanService extends ChangeNotifier {
       issuedAt: info.issuedAt,
       expiresAt: info.expiresAt,
       token: info.token,
+      activatedAt: DateTime.now().toUtc(),
     );
 
     _respond(request, 200, <String, dynamic>{
@@ -333,6 +334,7 @@ class LocalLanService extends ChangeNotifier {
       'phone': user.phoneNumber,
       'plan': user.planCode,
       'issued': user.issuedAt.toIso8601String(),
+      'activated': user.activatedAt.toIso8601String(),
       'expires': user.expiresAt?.toIso8601String(),
     };
   }
