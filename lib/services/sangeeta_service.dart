@@ -48,7 +48,8 @@ class SangeetaService extends ChangeNotifier {
         orElse: () => SangeetaPersonality.sweetheart,
       );
     }
-    if (savedLanguage != null) languageCode = savedLanguage;
+    // Ignore old saved language choices; Sangeeta is Odia-only.
+    languageCode = 'or-IN';
 
     await _tts.setSpeechRate(0.48);
     await _tts.setPitch(1.02);
@@ -360,14 +361,15 @@ class SangeetaService extends ChangeNotifier {
   }
 
   Future<void> setLanguage(String value) async {
-    languageCode = value;
+    // Product requirement: Sangeeta speaks only Odia.
+    languageCode = 'or-IN';
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_languageKey, value);
+    await prefs.setString(_languageKey, languageCode);
     try {
-      await _tts.setLanguage(value);
+      await _tts.setLanguage(languageCode);
     } catch (_) {}
     if (_initialized && locales.isNotEmpty) {
-      languageCode = _pickAvailableLocale(value);
+      languageCode = _pickAvailableLocale('or-IN');
     }
     notifyListeners();
   }
