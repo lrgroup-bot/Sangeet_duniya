@@ -57,8 +57,17 @@ jobs:
       - name: Build debug APK
         run: flutter build apk --debug
 
-      - name: Upload APK
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: lrs-sangeet-duniya-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrs-sangeet-duniya-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
