@@ -1,9 +1,12 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
+import 'package:rive/rive.dart' as rive;
 
 import 'screens/splash_screen.dart';
 import 'services/audio_handler.dart';
+import 'services/avatar_profile_service.dart';
+import 'services/auth_provider.dart';
 import 'services/library_store.dart';
 import 'theme/app_theme.dart';
 
@@ -11,6 +14,10 @@ late final MusicAudioHandler audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await rive.RiveNative.init();
+  } catch (_) {}
 
   try {
     final session = await AudioSession.instance;
@@ -47,6 +54,9 @@ Future<void> main() async {
   }
 
   await libraryStore.load();
+  await avatarProfileService.load();
+  await authProvider.initialize();
+
   runApp(const SangeetDuniyaApp());
 }
 
