@@ -258,7 +258,7 @@ class LocalLanService extends ChangeNotifier {
       final key = body['key']?.toString().trim() ?? '';
       if (key.isEmpty) return false;
 
-      return _requestAccessAgainstBase(
+      return await _requestAccessAgainstBase(
         base,
         key: key,
         name: name,
@@ -429,7 +429,7 @@ class LocalLanService extends ChangeNotifier {
       final key = body['key']?.toString().trim() ?? '';
       if (key.isEmpty) return null;
 
-      return _activateAgainstBase(
+      return await _activateAgainstBase(
         base,
         key: key,
         name: name,
@@ -466,6 +466,31 @@ class LocalLanService extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Admin sync
   // ---------------------------------------------------------------------------
+
+  Future<bool> checkRemoteAdmin() async {
+    final target =
+        _remoteAdminLink.isNotEmpty ? _remoteAdminLink : defaultRemotePcBase;
+    final parsed = _parseLink(target);
+    if (parsed == null) return false;
+
+    final uri = parsed.replace(
+      path: _appendEndpoint(parsed.path, '/health'),
+      queryParameters: const <String, String>{},
+    );
+
+    try {
+      final response =
+          await http.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode != 200) return false;
+
+      final decoded = jsonDecode(response.body);
+      return decoded is Map<String, dynamic> &&
+          decoded['ok'] == true &&
+          decoded['server']?.toString() == 'PC';
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<bool> syncFromAdmin() async {
     final target =
