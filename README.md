@@ -184,6 +184,15 @@ Rive Flutter is an MIT-licensed open-source runtime for loading and controlling 
 - Owner can generate 7-day, 30-day, 365-day, or Ultimate Lifetime tokens.
 - Tokens can be bound to a recipient phone number.
 - Other phones enter the phone number and token to unlock the app until the token expires.
-- Annual price label in the UI: ₹100/year.
 
-The current license gate is intended for personal/private distribution rather than tamper-proof commercial DRM.
+The current activation gate is for private distribution, and the app contains no payment gateway, checkout, subscription purchase, or in-app billing flow.
+
+
+## Free-only distribution
+
+- No payment gateway is included.
+- No subscription checkout is included.
+- No money collection is performed by the app.
+- 7-day, 30-day, 365-day and Ultimate are access-validity choices, not paid plans.
+- QR generation uses the free open-source `qr_flutter` package and works offline. citeturn961158search0turn961158search1
+- Flutter supports Android and iOS from the same codebase; iOS native build requires macOS/Xcode. citeturn135278search0turn135278search4
