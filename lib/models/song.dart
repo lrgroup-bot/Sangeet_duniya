@@ -8,6 +8,7 @@ class Song {
     required this.streamUrl,
     this.category = 'Trending',
     this.isFavorite = false,
+    this.lyrics = '',
   });
 
   final String id;
@@ -18,6 +19,7 @@ class Song {
   final String streamUrl;
   final String category;
   final bool isFavorite;
+  final String lyrics;
 
   Song copyWith({bool? isFavorite}) {
     return Song(
@@ -29,6 +31,7 @@ class Song {
       streamUrl: streamUrl,
       category: category,
       isFavorite: isFavorite ?? this.isFavorite,
+      lyrics: lyrics,
     );
   }
 }
