@@ -1,0 +1,54 @@
+name: iOS CI
+
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main, tailscale-admin ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate iOS platform
+        run: flutter create --platforms=ios --no-pub .
+
+      - name: Configure local network permission
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string LR's Sangeet_Duniya uses your local network to activate on the administrator phone." ios/Runner/Info.plist || true
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Unit tests
+        run: flutter test
+
+      - name: Build iOS unsigned
+        run: flutter build ios --release --no-codesign
+
+      - name: Archive iOS app
+        run: |
+          mkdir -p build/ios-artifact
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/ios-artifact/LRS-Sangeet-Duniya-iOS.app.zip
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lrs-sangeet-duniya-ios
+          path: build/ios-artifact/LRS-Sangeet-Duniya-iOS.app.zip
