@@ -48,3 +48,14 @@
 - Sangeeta avatar now runs locally on the phone.
 - Explicitly kept Supabase and Vercel out of the application runtime.
 - Admin records remain local to the owner device.
+
+
+## 0.6.0+8
+- Added direct Internet music search/trending adapter using Audius read-only APIs.
+- Expanded local library persistence so searched tracks remain available for favorites, playlists, history and downloads.
+- Added Sangeeta Auto EQ with local metadata-based recommendations.
+- Added Manual EQ presets and five-band controls.
+- Added Android live EQ/loudness effects through just_audio.
+- Added local Clean Audio processing to produce a denoised FLAC copy with EQ and loudness normalization.
+- Download controls now respect the source's downloadable flag.
+- Kept the application free of ads, subscriptions, payments, Supabase and Vercel runtime services.
