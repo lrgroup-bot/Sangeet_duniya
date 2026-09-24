@@ -205,3 +205,24 @@ The current activation gate is for private distribution. Names, phone numbers, t
 - 7-day, 30-day, 365-day and Ultimate are access-validity choices, not paid plans.
 - QR generation uses the free open-source `qr_flutter` package and works offline. citeturn961158search0turn961158search1
 - Flutter supports Android and iOS from the same codebase; iOS native build requires macOS/Xcode. citeturn135278search0turn135278search4
+
+
+## Internet Music + Audio Quality
+
+The app now has a direct Internet music catalog adapter using the Audius read-only API, plus the existing local library and background player. Audius provides REST endpoints for searching, trending, and streaming tracks; this app calls those endpoints directly from the phone and does not use Supabase or Vercel. citeturn542411search3
+
+### Sound controls
+
+- Sangeeta Auto EQ is enabled by default and chooses a local preset from song metadata.
+- Manual EQ provides Balanced, Bass Boost, Vocal Clarity, Dance, Rock, Acoustic and Classical presets plus five adjustable bands.
+- Android live EQ uses just_audio's Android audio-effect pipeline.
+- Clean Audio works on a song already downloaded to the phone and creates a local FLAC with denoise, EQ and loudness normalization. It does not magically restore information that was never present in the source.
+- Download is only offered when the source marks the track as downloadable.
+
+The Android EQ pipeline uses just_audio's `AndroidEqualizer` / `AndroidLoudnessEnhancer` effects. citeturn542411search10turn542411search12 FFmpeg audio processing is provided by the maintained `ffmpeg_kit_flutter_new_audio` package, which supports Android and iOS among its supported platforms. citeturn542411search1
+
+### Ad-free experience
+
+LR's Sangeet_Duniya contains no advertising SDK or paid subscription flow in the app. It can provide an ad-free player interface for the sources we integrate directly. It does not bypass, remove, or defeat advertisements, paywalls, DRM, or access controls of third-party services.
+
+The available catalog therefore depends on the source's rights and API. The app is designed to add additional direct, permitted music sources without adding a cloud backend.
