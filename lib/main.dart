@@ -13,8 +13,19 @@ late final MusicAudioHandler audioHandler;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final session = await AudioSession.instance;
-  await session.configure(const AudioSessionConfiguration.music());
+  try {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
+  } catch (error, stackTrace) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'audio_session startup',
+        context: ErrorDescription('configuring the music audio session'),
+      ),
+    );
+  }
 
   try {
     audioHandler = await AudioService.init(
