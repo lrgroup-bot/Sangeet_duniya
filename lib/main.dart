@@ -16,7 +16,7 @@ Future<void> main() async {
 
   audioHandler = await AudioService.init(
     builder: MusicAudioHandler.new,
-    config: const AudioServiceConfig(
+    config: AudioServiceConfig(
       androidNotificationChannelId: 'com.lrs.sangeet_duniya.audio',
       androidNotificationChannelName: "LR's Sangeet_Duniya",
       androidNotificationOngoing: true,
