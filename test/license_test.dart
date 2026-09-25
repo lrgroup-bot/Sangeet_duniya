@@ -4,37 +4,47 @@ import 'package:lrs_sangeet_duniya/models/license_plan.dart';
 import 'package:lrs_sangeet_duniya/services/license_service.dart';
 
 void main() {
-  test('license token round-trips for each plan', () {
-    final service = LicenseService.instance;
-
-    for (final plan in LicensePlan.values) {
-      final token = service.generateToken(plan);
-      final info = service.validateToken(token);
-
-      expect(info, isNotNull);
-      expect(info!.plan, plan);
-      expect(info.token, token);
-      expect(info.isExpired, isFalse);
-      if (plan == LicensePlan.ultimate) {
-        expect(info.isLifetime, isTrue);
-      } else {
-        expect(info.expiresAt, isNotNull);
-      }
-    }
+  test('v2.2 exposes all requested validity periods', () {
+    expect(
+      LicensePlan.values.map((plan) => plan.durationDays),
+      containsAll(<int?>[7, 14, 30, 90, 180, 365, null]),
+    );
   });
 
-  test('tampered token is rejected', () {
+  test('activation code must be exactly six digits', () {
     final service = LicenseService.instance;
-    final token = service.generateToken(LicensePlan.sevenDays);
-    final last = token.endsWith('0') ? '1' : '0';
-    final tampered = token.substring(0, token.length - 1) + last;
-
-    expect(service.validateToken(tampered), isNull);
+    expect(service.isSixDigitCode('123456'), isTrue);
+    expect(service.isSixDigitCode('12345'), isFalse);
+    expect(service.isSixDigitCode('1234567'), isFalse);
+    expect(service.isSixDigitCode('12A456'), isFalse);
   });
 
-  test('owner PIN gates owner mode', () {
+  test('server activation payload round-trips through offline cache', () {
     final service = LicenseService.instance;
-    expect(service.verifyOwnerPin('wrong'), isFalse);
-    expect(service.verifyOwnerPin(LicenseService.ownerPin), isTrue);
+    final now = DateTime.now().toUtc();
+    final payload = <String, dynamic>{
+      'ok': true,
+      'active': true,
+      'activation': <String, dynamic>{
+        'plan': LicensePlan.ninetyDays.name,
+        'issued_at': now.toIso8601String(),
+        'activated_at': now.toIso8601String(),
+        'expires_at':
+            now.add(const Duration(days: 90)).toIso8601String(),
+        'phone': '+919999999999',
+        'name': 'Test User',
+        'activation_id': 'activation-test',
+        'device_id': 'device-test',
+      },
+    };
+
+    final info = service.fromServerPayload(payload);
+    expect(info, isNotNull);
+    expect(info!.plan, LicensePlan.ninetyDays);
+    expect(info.isExpired, isFalse);
+
+    final cached = service.decodeCache(service.encodeCache(info));
+    expect(cached?.activationId, 'activation-test');
+    expect(cached?.deviceId, 'device-test');
   });
 }

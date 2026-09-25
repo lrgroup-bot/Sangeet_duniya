@@ -1,22 +1,38 @@
 enum LicensePlan {
   sevenDays,
+  fourteenDays,
   thirtyDays,
+  ninetyDays,
+  oneHundredEightyDays,
   oneYear,
-  ultimate,
+  lifetime,
 }
 
 extension LicensePlanInfo on LicensePlan {
   String get label => switch (this) {
         LicensePlan.sevenDays => '7 Days',
+        LicensePlan.fourteenDays => '14 Days',
         LicensePlan.thirtyDays => '30 Days',
+        LicensePlan.ninetyDays => '90 Days',
+        LicensePlan.oneHundredEightyDays => '180 Days',
         LicensePlan.oneYear => '365 Days',
-        LicensePlan.ultimate => 'Ultimate • Lifetime',
+        LicensePlan.lifetime => 'Lifetime',
       };
 
-  Duration? get duration => switch (this) {
-        LicensePlan.sevenDays => const Duration(days: 7),
-        LicensePlan.thirtyDays => const Duration(days: 30),
-        LicensePlan.oneYear => const Duration(days: 365),
-        LicensePlan.ultimate => null,
+  int? get durationDays => switch (this) {
+        LicensePlan.sevenDays => 7,
+        LicensePlan.fourteenDays => 14,
+        LicensePlan.thirtyDays => 30,
+        LicensePlan.ninetyDays => 90,
+        LicensePlan.oneHundredEightyDays => 180,
+        LicensePlan.oneYear => 365,
+        LicensePlan.lifetime => null,
       };
+
+  static LicensePlan fromWire(String value) {
+    for (final plan in LicensePlan.values) {
+      if (plan.name == value) return plan;
+    }
+    throw FormatException('Unknown license plan: $value');
+  }
 }

@@ -10,7 +10,6 @@ import '../widgets/sangeeta_avatar.dart';
 import '../widgets/sangeeta_logo.dart';
 import 'admin_dashboard_screen.dart';
 import 'equalizer_screen.dart';
-import 'license_admin_screen.dart';
 import 'sangeeta_preview_screen.dart';
 import 'wardrobe_screen.dart';
 
@@ -40,7 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 6),
               const Center(
                 child: Text(
-                  "LR's Sangeet_Duniya",
+                  "LR's Sangeet_Duniya v2.2",
                   style: TextStyle(
                     color: AppTheme.gold,
                     fontWeight: FontWeight.w900,
@@ -51,9 +50,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 22),
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.verified_rounded, color: AppTheme.gold),
+                  leading: const Icon(
+                    Icons.verified_rounded,
+                    color: AppTheme.gold,
+                  ),
                   title: const Text('App access'),
                   subtitle: Text(authProvider.statusText),
+                  trailing: IconButton(
+                    tooltip: 'Sync with PC',
+                    onPressed: authProvider.syncing
+                        ? null
+                        : authProvider.syncWithAdmin,
+                    icon: authProvider.syncing
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.sync_rounded),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -64,7 +78,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 6),
               DropdownButtonFormField<SangeetaPersonality>(
                 initialValue: sangeetaService.personality,
-                decoration: const InputDecoration(labelText: 'Personality mode'),
+                decoration:
+                    const InputDecoration(labelText: 'Personality mode'),
                 items: SangeetaPersonality.values
                     .map(
                       (mode) => DropdownMenuItem(
@@ -74,7 +89,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     )
                     .toList(),
                 onChanged: (value) {
-                  if (value != null) sangeetaService.setPersonality(value);
+                  if (value != null) {
+                    sangeetaService.setPersonality(value);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -92,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SwitchListTile(
                 title: const Text('Foreground wake mode'),
-                subtitle: const Text('Listen for "Hey Sangeeta".'),
+                subtitle: const Text('Listen for “Hey Sangeeta”.'),
                 value: sangeetaService.continuousWakeMode,
                 onChanged: sangeetaService.setWakeMode,
               ),
@@ -123,11 +140,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(Icons.checkroom_rounded, color: AppTheme.gold),
+                leading:
+                    const Icon(Icons.checkroom_rounded, color: AppTheme.gold),
                 title: const Text('Wardrobe Studio'),
                 subtitle: Text(
-                  avatarProfileService.category.label +
-                      ' • hair, earrings, shoes & accessories',
+                  '${avatarProfileService.category.label} • hair, earrings, shoes & accessories',
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(context).push(
@@ -138,7 +155,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(height: 30),
               ListTile(
-                leading: const Icon(Icons.equalizer_rounded, color: AppTheme.gold),
+                leading:
+                    const Icon(Icons.equalizer_rounded, color: AppTheme.gold),
                 title: const Text('Sangeeta Equalizer'),
                 subtitle: const Text(
                   'Auto EQ by default • Manual presets and 5-band controls',
@@ -156,7 +174,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   color: AppTheme.gold,
                 ),
                 title: const Text('Avatar Character Preview'),
-                subtitle: const Text('Check Sangeeta identity and animation states'),
+                subtitle:
+                    const Text('Check Sangeeta identity and animation states'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -164,29 +183,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              if (authProvider.isOwner) ...[
-                const Divider(height: 30),
-                ListTile(
-                  leading: const Icon(Icons.dashboard_rounded, color: AppTheme.gold),
-                  title: const Text('Admin Dashboard'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const AdminDashboardScreen(),
-                    ),
+              const Divider(height: 30),
+              ListTile(
+                leading: const Icon(
+                  Icons.desktop_windows_rounded,
+                  color: AppTheme.gold,
+                ),
+                title: const Text('Windows PC Admin Server'),
+                subtitle: Text(
+                  authProvider.serverUrl.isEmpty
+                      ? 'Configure same-WiFi or Tailscale sync'
+                      : authProvider.serverUrl,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AdminDashboardScreen(),
                   ),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.key_rounded, color: AppTheme.gold),
-                  title: const Text('License Manager'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const LicenseAdminScreen(),
-                    ),
-                  ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded),
+                title: const Text('Deactivate this phone'),
+                subtitle: const Text(
+                  'Removes the cached activation from this device only.',
                 ),
-              ],
+                onTap: authProvider.signOut,
+              ),
             ],
           );
         },

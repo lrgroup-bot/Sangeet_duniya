@@ -1,7 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
-
-import 'package:crypto/crypto.dart';
 
 import '../models/license_plan.dart';
 
@@ -9,18 +6,25 @@ class LicenseInfo {
   const LicenseInfo({
     required this.plan,
     required this.issuedAt,
+    required this.activatedAt,
     required this.expiresAt,
     required this.phoneNumber,
-    required this.token,
+    required this.userName,
+    required this.activationId,
+    required this.deviceId,
   });
 
   final LicensePlan plan;
   final DateTime issuedAt;
+  final DateTime activatedAt;
   final DateTime? expiresAt;
   final String phoneNumber;
-  final String token;
+  final String userName;
+  final String activationId;
+  final String deviceId;
 
   bool get isLifetime => expiresAt == null;
+
   bool get isExpired =>
       expiresAt != null && !DateTime.now().toUtc().isBefore(expiresAt!);
 
@@ -29,6 +33,17 @@ class LicenseInfo {
     final value = expiresAt!.difference(DateTime.now().toUtc());
     return value.isNegative ? Duration.zero : value;
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'plan': plan.name,
+        'issued_at': issuedAt.toIso8601String(),
+        'activated_at': activatedAt.toIso8601String(),
+        'expires_at': expiresAt?.toIso8601String(),
+        'phone': phoneNumber,
+        'name': userName,
+        'activation_id': activationId,
+        'device_id': deviceId,
+      };
 }
 
 class LicenseService {
@@ -36,82 +51,52 @@ class LicenseService {
 
   static final instance = LicenseService._();
 
-  // Practical private-app gate. A public commercial release should use
-  // server-backed licensing or asymmetric signatures.
-  static const _productSecret = 'LRS_SANGEET_DUNIYA_PRIVATE_2026';
-  static const ownerPin = 'LRS-OWNER-2026';
+  bool isSixDigitCode(String value) =>
+      RegExp(r'^\d{6}$').hasMatch(value.trim());
 
-  String generateToken(
-    LicensePlan plan, {
-    String phoneNumber = '',
-  }) {
-    final now = DateTime.now().toUtc();
-    final expiry = plan.duration == null ? null : now.add(plan.duration!);
-
-    final payload = <String, dynamic>{
-      'v': 1,
-      'plan': plan.name,
-      'issued': now.millisecondsSinceEpoch,
-      'expires': expiry?.millisecondsSinceEpoch ?? 0,
-      'phone': phoneNumber.trim(),
-      'nonce': Random.secure().nextInt(0x7fffffff),
-    };
-
-    final payloadText =
-        base64Url.encode(utf8.encode(jsonEncode(payload))).replaceAll('=', '');
-    return 'LRS1.' + payloadText + '.' + _sign(payloadText);
-  }
-
-  LicenseInfo? validateToken(String rawToken) {
+  LicenseInfo? fromServerPayload(Map<String, dynamic> json) {
     try {
-      final token = rawToken.trim();
-      final parts = token.split('.');
-      if (parts.length != 3 || parts.first != 'LRS1') return null;
-
-      final payloadText = parts[1];
-      if (_sign(payloadText) != parts[2]) return null;
-
-      final decoded = jsonDecode(
-        utf8.decode(base64Url.decode(base64Url.normalize(payloadText))),
-      );
-      if (decoded is! Map<String, dynamic> || decoded['v'] != 1) {
-        return null;
-      }
-
-      final plan = LicensePlan.values.firstWhere(
-        (value) => value.name == decoded['plan']?.toString(),
-      );
-      final issuedMs = int.parse(decoded['issued'].toString());
-      final expiresMs = int.parse(decoded['expires'].toString());
-
-      final expiresAt = expiresMs == 0
-          ? null
-          : DateTime.fromMillisecondsSinceEpoch(expiresMs, isUtc: true);
-      if (expiresAt != null && !DateTime.now().toUtc().isBefore(expiresAt)) {
-        return null;
-      }
-
-      return LicenseInfo(
-        plan: plan,
-        issuedAt: DateTime.fromMillisecondsSinceEpoch(
-          issuedMs,
-          isUtc: true,
-        ),
-        expiresAt: expiresAt,
-        phoneNumber: decoded['phone']?.toString() ?? '',
-        token: token,
-      );
+      final activation = json['activation'];
+      if (activation is! Map<String, dynamic>) return null;
+      if (json['active'] == false) return null;
+      return _parseActivation(activation);
     } catch (_) {
       return null;
     }
   }
 
-  bool verifyOwnerPin(String value) => value.trim() == ownerPin;
+  LicenseInfo? decodeCache(String raw) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return null;
+      final info = _parseActivation(decoded);
+      return info.isExpired ? null : info;
+    } catch (_) {
+      return null;
+    }
+  }
 
-  String _sign(String payload) {
-    return Hmac(
-      sha256,
-      utf8.encode(_productSecret),
-    ).convert(utf8.encode(payload)).toString();
+  String encodeCache(LicenseInfo info) => jsonEncode(info.toJson());
+
+  LicenseInfo _parseActivation(Map<String, dynamic> json) {
+    final plan = LicensePlanInfo.fromWire(json['plan']?.toString() ?? '');
+    final issuedAt = DateTime.parse(json['issued_at'].toString()).toUtc();
+    final activatedAt =
+        DateTime.parse(json['activated_at'].toString()).toUtc();
+    final expiryRaw = json['expires_at'];
+    final expiresAt = expiryRaw == null || expiryRaw.toString().isEmpty
+        ? null
+        : DateTime.parse(expiryRaw.toString()).toUtc();
+
+    return LicenseInfo(
+      plan: plan,
+      issuedAt: issuedAt,
+      activatedAt: activatedAt,
+      expiresAt: expiresAt,
+      phoneNumber: json['phone']?.toString() ?? '',
+      userName: json['name']?.toString() ?? '',
+      activationId: json['activation_id']?.toString() ?? '',
+      deviceId: json['device_id']?.toString() ?? '',
+    );
   }
 }
