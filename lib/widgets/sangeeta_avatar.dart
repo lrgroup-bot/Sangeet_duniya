@@ -23,6 +23,9 @@ class SangeetaAvatar extends StatefulWidget {
     required this.pose,
     this.category,
     this.hairstyle = Hairstyle.longWave,
+    this.speechMouthOpen,
+    this.speechMouthWidth,
+    this.speechMouthRoundness,
     this.size = 150,
     super.key,
   });
@@ -31,6 +34,9 @@ class SangeetaAvatar extends StatefulWidget {
   final WardrobeCategory? category;
   final Hairstyle hairstyle;
   final SangeetaPose pose;
+  final double? speechMouthOpen;
+  final double? speechMouthWidth;
+  final double? speechMouthRoundness;
   final double size;
 
   @override
@@ -81,6 +87,9 @@ class _SangeetaAvatarState extends State<SangeetaAvatar>
                 hairstyle: widget.hairstyle,
                 pose: widget.pose,
                 phase: t,
+                speechMouthOpen: widget.speechMouthOpen,
+                speechMouthWidth: widget.speechMouthWidth,
+                speechMouthRoundness: widget.speechMouthRoundness,
               ),
             ),
           ),
@@ -107,6 +116,9 @@ class _SangeetaAvatarPainter extends CustomPainter {
     required this.hairstyle,
     required this.pose,
     required this.phase,
+    required this.speechMouthOpen,
+    required this.speechMouthWidth,
+    required this.speechMouthRoundness,
   });
 
   final AvatarOutfit outfit;
@@ -114,6 +126,9 @@ class _SangeetaAvatarPainter extends CustomPainter {
   final Hairstyle hairstyle;
   final SangeetaPose pose;
   final double phase;
+  final double? speechMouthOpen;
+  final double? speechMouthWidth;
+  final double? speechMouthRoundness;
 
   Color get primary => switch (category) {
         WardrobeCategory.casual => const Color(0xFF67584E),
@@ -969,27 +984,36 @@ class _SangeetaAvatarPainter extends CustomPainter {
   void _paintMouth(Canvas canvas, double s, double c, double bodyShift) {
     final mouthCenter = Offset(c + bodyShift, s * .372);
     if (pose == SangeetaPose.speaking) {
-      final cycle = math.sin(phase * math.pi * 8);
-      final height = s * (.022 + .018 * cycle.abs());
-      final width = s * (.067 + .012 * math.cos(phase * math.pi * 6).abs());
+      final drivenOpen = speechMouthOpen;
+      final pulse = .92 + .08 * math.sin(phase * math.pi * 6).abs();
+      final open = drivenOpen == null
+          ? (.38 + .34 * math.sin(phase * math.pi * 8).abs())
+          : (drivenOpen * pulse).clamp(0.0, 1.0);
+      final widthScale = (speechMouthWidth ?? 1.0).clamp(.55, 1.25);
+      final roundness = (speechMouthRoundness ?? .15).clamp(0.0, 1.0);
+      final width = s * .074 * widthScale * (1 - roundness * .10);
+      final height = s * (.010 + .048 * open) * (1 + roundness * .18);
+
       canvas.drawOval(
         Rect.fromCenter(center: mouthCenter, width: width, height: height),
         Paint()..color = const Color(0xFF7B3041),
       );
-      canvas.drawArc(
-        Rect.fromCenter(
-          center: Offset(mouthCenter.dx, mouthCenter.dy + height * .06),
-          width: width * .82,
-          height: height * .60,
-        ),
-        0,
-        math.pi,
-        false,
-        Paint()
-          ..color = SangeetaLikeness.lipHighlight
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = s * .006,
-      );
+      if (open > .18) {
+        canvas.drawArc(
+          Rect.fromCenter(
+            center: Offset(mouthCenter.dx, mouthCenter.dy + height * .06),
+            width: width * .82,
+            height: height * .60,
+          ),
+          0,
+          math.pi,
+          false,
+          Paint()
+            ..color = SangeetaLikeness.lipHighlight
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = s * .006,
+        );
+      }
       return;
     }
 
@@ -1144,5 +1168,8 @@ class _SangeetaAvatarPainter extends CustomPainter {
       oldDelegate.category != category ||
       oldDelegate.hairstyle != hairstyle ||
       oldDelegate.pose != pose ||
-      oldDelegate.phase != phase;
+      oldDelegate.phase != phase ||
+      oldDelegate.speechMouthOpen != speechMouthOpen ||
+      oldDelegate.speechMouthWidth != speechMouthWidth ||
+      oldDelegate.speechMouthRoundness != speechMouthRoundness;
 }

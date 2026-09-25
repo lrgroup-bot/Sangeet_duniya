@@ -15,12 +15,18 @@ class RiveAvatarStage extends StatelessWidget {
   const RiveAvatarStage({
     required this.outfit,
     required this.pose,
+    this.speechMouthOpen,
+    this.speechMouthWidth,
+    this.speechMouthRoundness,
     this.size = 180,
     super.key,
   });
 
   final AvatarOutfit outfit;
   final SangeetaPose pose;
+  final double? speechMouthOpen;
+  final double? speechMouthWidth;
+  final double? speechMouthRoundness;
   final double size;
 
   @override
@@ -41,6 +47,9 @@ class RiveAvatarStage extends StatelessWidget {
                 category: avatarProfileService.category,
                 hairstyle: avatarProfileService.hairstyle,
                 pose: pose,
+                speechMouthOpen: speechMouthOpen,
+                speechMouthWidth: speechMouthWidth,
+                speechMouthRoundness: speechMouthRoundness,
                 size: size,
               ),
               AvatarAccessoryOverlay(

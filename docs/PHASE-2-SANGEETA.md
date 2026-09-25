@@ -8,6 +8,8 @@
 - [x] Odia-first voice responses with Hindi/English language options.
 - [x] Voice input using the device speech recognizer.
 - [x] Local text-to-speech using the device TTS engine.
+- [x] TTS word-progress callbacks drive local lip shapes, so the avatar mouth follows real spoken-word timing instead of a blind loop.
+- [x] Lightweight English/Hindi/Odia viseme approximation (open/wide/rounded/closed) with no cloud dependency.
 - [x] Wake phrase parsing for:
   - Hey Sangeeta
   - Hi Sangeeta
@@ -35,4 +37,4 @@ The current wake mode is foreground and session-based because the speech_to_text
 - [x] Unit test suite passes on CI.
 - [ ] Real-device microphone + Odia recognition/TTS regression test.
 
-Status: IMPLEMENTED — DEVICE VOICE TEST PENDING
+Status: IMPLEMENTED — DEVICE VOICE + VISUAL LIP-SYNC TEST PENDING

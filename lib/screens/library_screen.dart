@@ -7,14 +7,22 @@ import '../widgets/song_card.dart';
 import 'player_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
+  const LibraryScreen({this.initialSection = 0, super.key});
+
+  final int initialSection;
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  int _section = 0;
+  late int _section;
+
+  @override
+  void initState() {
+    super.initState();
+    _section = widget.initialSection.clamp(0, 3);
+  }
 
   Future<void> _createPlaylist() async {
     final controller = TextEditingController();
@@ -40,7 +48,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
     );
     controller.dispose();
-
     if (name != null) await libraryStore.createPlaylist(name);
   }
 
@@ -59,64 +66,34 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
       body: AnimatedBuilder(
         animation: libraryStore,
-        builder: (context, _) {
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _Chip(
-                      label: 'Favorites',
-                      selected: _section == 0,
-                      onTap: () => setState(() => _section = 0),
-                    ),
-                    _Chip(
-                      label: 'Downloads',
-                      selected: _section == 1,
-                      onTap: () => setState(() => _section = 1),
-                    ),
-                    _Chip(
-                      label: 'History',
-                      selected: _section == 2,
-                      onTap: () => setState(() => _section = 2),
-                    ),
-                    _Chip(
-                      label: 'Playlists',
-                      selected: _section == 3,
-                      onTap: () => setState(() => _section = 3),
-                    ),
-                  ],
-                ),
+        builder: (context, _) => ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _Chip(label: 'Favorites', selected: _section == 0, onTap: () => setState(() => _section = 0)),
+                  _Chip(label: 'Downloads', selected: _section == 1, onTap: () => setState(() => _section = 1)),
+                  _Chip(label: 'History', selected: _section == 2, onTap: () => setState(() => _section = 2)),
+                  _Chip(label: 'Playlists', selected: _section == 3, onTap: () => setState(() => _section = 3)),
+                ],
               ),
-              const SizedBox(height: 18),
-              switch (_section) {
-                0 => _songs(
-                    title: 'Favorite songs',
-                    songs: libraryStore.favorites,
-                  ),
-                1 => _songs(
-                    title: 'Offline songs',
-                    songs: libraryStore.downloads,
-                  ),
-                2 => _songs(
-                    title: 'Recently played',
-                    songs: libraryStore.historySongs,
-                  ),
-                _ => _playlists(),
-              },
-            ],
-          );
-        },
+            ),
+            const SizedBox(height: 18),
+            switch (_section) {
+              0 => _songs(title: 'Favorite songs', songs: libraryStore.favorites),
+              1 => _songs(title: 'Offline songs', songs: libraryStore.downloads),
+              2 => _songs(title: 'Recently played', songs: libraryStore.historySongs),
+              _ => _playlists(),
+            },
+          ],
+        ),
       ),
     );
   }
 
-  Widget _songs({
-    required String title,
-    required List<Song> songs,
-  }) {
+  Widget _songs({required String title, required List<Song> songs}) {
     if (songs.isEmpty) {
       return Card(
         child: Padding(
@@ -125,28 +102,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
             children: [
               const Icon(Icons.library_music_outlined, size: 46),
               const SizedBox(height: 12),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
+              Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              const Text(
-                'Nothing here yet. Use a song action to save it.',
-                textAlign: TextAlign.center,
-              ),
+              const Text('Nothing here yet. Use a song action to save it.', textAlign: TextAlign.center),
             ],
           ),
         ),
       );
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-        ),
+        Text(title, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
         const SizedBox(height: 12),
         ...songs.map(
           (song) => Padding(
@@ -157,9 +124,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 await audioHandler.playSong(song);
                 if (!context.mounted) return;
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PlayerScreen(),
-                  ),
+                  MaterialPageRoute<void>(builder: (_) => const PlayerScreen()),
                 );
               },
             ),
@@ -178,15 +143,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
             children: [
               const Icon(Icons.queue_music_rounded, size: 46),
               const SizedBox(height: 12),
-              const Text(
-                'No playlists yet',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
+              const Text('No playlists yet', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              const Text(
-                'Create one with the + playlist button, then add songs from a song card menu.',
-                textAlign: TextAlign.center,
-              ),
+              const Text('Create one, then add songs from a song card menu.', textAlign: TextAlign.center),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _createPlaylist,
@@ -200,41 +159,33 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
 
     return Column(
-      children: libraryStore.playlistNames.map(
-        (name) {
-          final count = libraryStore.songsInPlaylist(name).length;
-          return Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            child: ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.queue_music_rounded),
-              ),
-              title: Text(
-                name,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: Text('$count songs'),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => PlaylistDetailScreen(name: name),
-                ),
-              ),
-              trailing: IconButton(
-                tooltip: 'Delete playlist',
-                onPressed: () => libraryStore.deletePlaylist(name),
-                icon: const Icon(Icons.delete_outline_rounded),
+      children: libraryStore.playlistNames.map((name) {
+        final count = libraryStore.songsInPlaylist(name).length;
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.queue_music_rounded)),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text(count.toString() + ' songs'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => PlaylistDetailScreen(name: name),
               ),
             ),
-          );
-        },
-      ).toList(),
+            trailing: IconButton(
+              tooltip: 'Delete playlist',
+              onPressed: () => libraryStore.deletePlaylist(name),
+              icon: const Icon(Icons.delete_outline_rounded),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
 
 class PlaylistDetailScreen extends StatelessWidget {
   const PlaylistDetailScreen({required this.name, super.key});
-
   final String name;
 
   @override
@@ -245,9 +196,7 @@ class PlaylistDetailScreen extends StatelessWidget {
         animation: libraryStore,
         builder: (context, _) {
           final songs = libraryStore.songsInPlaylist(name);
-          if (songs.isEmpty) {
-            return const Center(child: Text('This playlist is empty.'));
-          }
+          if (songs.isEmpty) return const Center(child: Text('This playlist is empty.'));
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: songs.length,
@@ -261,9 +210,7 @@ class PlaylistDetailScreen extends StatelessWidget {
                     await audioHandler.playSong(song);
                     if (!context.mounted) return;
                     Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PlayerScreen(),
-                      ),
+                      MaterialPageRoute<void>(builder: (_) => const PlayerScreen()),
                     );
                   },
                 ),
@@ -277,25 +224,18 @@ class PlaylistDetailScreen extends StatelessWidget {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
+  const _Chip({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onTap(),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(
+          label: Text(label),
+          selected: selected,
+          onSelected: (_) => onTap(),
+        ),
+      );
 }

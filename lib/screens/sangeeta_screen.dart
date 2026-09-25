@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import '../models/sangeeta_personality.dart';
 import '../services/avatar_profile_service.dart';
 import '../services/sangeeta_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
-import '../theme/app_theme.dart';
 import '../widgets/sangeeta_logo.dart';
+import 'library_screen.dart';
+import 'search_screen.dart';
 import 'settings_screen.dart';
+import 'wardrobe_screen.dart';
 
 class SangeetaScreen extends StatefulWidget {
   const SangeetaScreen({super.key});
@@ -22,6 +25,7 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
   @override
   void initState() {
     super.initState();
+    sangeetaService.attachRouteHandler(_handleRoute);
     sangeetaService.init().then((_) {
       if (mounted && sangeetaService.continuousWakeMode) {
         sangeetaService.startListening();
@@ -29,8 +33,31 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
     });
   }
 
+  void _handleRoute(SangeetaRoute route, String argument) {
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (route) {
+        case SangeetaRoute.playlists:
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const LibraryScreen(initialSection: 3),
+            ),
+          );
+          break;
+        case SangeetaRoute.search:
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SearchScreen(initialQuery: argument),
+            ),
+          );
+      }
+    });
+  }
+
   @override
   void dispose() {
+    sangeetaService.detachRouteHandler();
     _controller.dispose();
     super.dispose();
   }
@@ -48,6 +75,15 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
       appBar: AppBar(
         title: const Text('Sangeeta'),
         actions: [
+          IconButton(
+            tooltip: 'Wardrobe',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const WardrobeScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.checkroom_rounded),
+          ),
           IconButton(
             tooltip: 'Settings',
             onPressed: () => Navigator.of(context).push(
@@ -83,10 +119,10 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                 ListenableBuilder(
                   listenable: avatarProfileService,
                   builder: (context, _) {
-                    final pose = sangeetaService.isListening
-                        ? SangeetaPose.listening
-                        : sangeetaService.isSpeaking
-                            ? SangeetaPose.speaking
+                    final pose = sangeetaService.isSpeaking
+                        ? SangeetaPose.speaking
+                        : sangeetaService.isListening
+                            ? SangeetaPose.listening
                             : SangeetaPose.greeting;
                     return Container(
                       height: 255,
@@ -107,6 +143,15 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                           RiveAvatarStage(
                             outfit: avatarProfileService.outfit,
                             pose: pose,
+                            speechMouthOpen: sangeetaService.isSpeaking
+                                ? sangeetaService.speechMouthOpen
+                                : null,
+                            speechMouthWidth: sangeetaService.isSpeaking
+                                ? sangeetaService.speechMouthWidth
+                                : null,
+                            speechMouthRoundness: sangeetaService.isSpeaking
+                                ? sangeetaService.speechMouthRoundness
+                                : null,
                             size: 230,
                           ),
                           Positioned(
@@ -123,11 +168,13 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                                   vertical: 7,
                                 ),
                                 child: Text(
-                                  sangeetaService.isListening
-                                      ? 'Sangeeta is listening…'
-                                      : sangeetaService.isSpeaking
+                                  sangeetaService.isSpeaking
+                                      ? (sangeetaService.speakingWord.isEmpty
                                           ? 'Sangeeta is speaking…'
-                                          : 'Sangeeta • Sweetheart',
+                                          : 'Speaking • ${sangeetaService.speakingWord}')
+                                      : sangeetaService.isListening
+                                          ? 'Waiting for “Hey Sangeeta”…'
+                                          : 'Sangeeta • Ready',
                                   style: const TextStyle(
                                     color: AppTheme.gold2,
                                     fontWeight: FontWeight.w800,
@@ -149,7 +196,7 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Wake phrases',
+                          'Wake word',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
@@ -157,35 +204,15 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Hey Sangeeta • Hi Sangeeta • Hello Sangeeta\n'
-                          'Hey Sweetheart • Hi Baby • Hello Darling',
+                          'Say “Hey Sangeeta” before a voice command. Typed commands do not require the wake word.',
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(
-                              sangeetaService.isListening
-                                  ? Icons.mic_rounded
-                                  : Icons.mic_off_rounded,
-                              color: sangeetaService.isListening
-                                  ? AppTheme.gold
-                                  : Colors.white54,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                sangeetaService.isListening
-                                    ? 'Listening in foreground…'
-                                    : 'Tap the microphone to listen.',
-                                style: TextStyle(
-                                  color: sangeetaService.isListening
-                                      ? AppTheme.gold
-                                      : Colors.white70,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 10),
+                        Text(
+                          'Play • Pause • Resume • Next • Previous • Volume Up/Down • Open Playlist • Download Song • Search Song',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: .65),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -217,11 +244,9 @@ class _SangeetaScreenState extends State<SangeetaScreen> {
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.all(20),
                     ),
-                    onPressed: () {
-                      sangeetaService.setWakeMode(
-                        !sangeetaService.continuousWakeMode,
-                      );
-                    },
+                    onPressed: () => sangeetaService.setWakeMode(
+                      !sangeetaService.continuousWakeMode,
+                    ),
                     icon: Icon(
                       sangeetaService.isListening
                           ? Icons.mic_rounded
