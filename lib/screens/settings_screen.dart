@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/auth_provider.dart';
 
-import '../models/avatar_outfit.dart';
 import '../models/sangeeta_personality.dart';
+import '../services/auth_provider.dart';
 import '../services/avatar_profile_service.dart';
 import '../services/sangeeta_service.dart';
 import '../theme/app_theme.dart';
@@ -10,9 +9,10 @@ import '../widgets/rive_avatar_stage.dart';
 import '../widgets/sangeeta_avatar.dart';
 import '../widgets/sangeeta_logo.dart';
 import 'admin_dashboard_screen.dart';
-import 'license_admin_screen.dart';
 import 'equalizer_screen.dart';
+import 'license_admin_screen.dart';
 import 'sangeeta_preview_screen.dart';
+import 'wardrobe_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -51,10 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 22),
               Card(
                 child: ListTile(
-                  leading: const Icon(
-                    Icons.verified_rounded,
-                    color: AppTheme.gold,
-                  ),
+                  leading: const Icon(Icons.verified_rounded, color: AppTheme.gold),
                   title: const Text('App access'),
                   subtitle: Text(authProvider.statusText),
                 ),
@@ -67,9 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 6),
               DropdownButtonFormField<SangeetaPersonality>(
                 initialValue: sangeetaService.personality,
-                decoration: const InputDecoration(
-                  labelText: 'Personality mode',
-                ),
+                decoration: const InputDecoration(labelText: 'Personality mode'),
                 items: SangeetaPersonality.values
                     .map(
                       (mode) => DropdownMenuItem(
@@ -83,11 +78,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Sangeeta language',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: sangeetaService.languageCode,
                 decoration: const InputDecoration(labelText: 'Voice language'),
@@ -102,9 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               SwitchListTile(
                 title: const Text('Foreground wake mode'),
-                subtitle: const Text(
-                  'Listen on the Sangeeta screen for Hey Sangeeta, Sweetheart, Baby or Darling.',
-                ),
+                subtitle: const Text('Listen for "Hey Sangeeta".'),
                 value: sangeetaService.continuousWakeMode,
                 onChanged: sangeetaService.setWakeMode,
               ),
@@ -113,27 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Sangeeta live avatar',
                 style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Choose an original wardrobe preset. The live Sangeeta avatar is bundled inside the app and works without a cloud avatar service.',
-              ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<AvatarOutfit>(
-                initialValue: avatarProfileService.outfit,
-                decoration: const InputDecoration(labelText: 'Wardrobe'),
-                items: AvatarOutfit.values
-                    .map(
-                      (outfit) => DropdownMenuItem(
-                        value: outfit,
-                        child: Text(outfit.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) avatarProfileService.setOutfit(value);
-                },
-              ),
-              const SizedBox(height: 14),
               Center(
                 child: Container(
                   height: 180,
@@ -153,12 +121,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.checkroom_rounded, color: AppTheme.gold),
+                title: const Text('Wardrobe Studio'),
+                subtitle: Text(
+                  avatarProfileService.category.label +
+                      ' • hair, earrings, shoes & accessories',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const WardrobeScreen(),
+                  ),
+                ),
+              ),
               const Divider(height: 30),
               ListTile(
-                leading: const Icon(
-                  Icons.equalizer_rounded,
-                  color: AppTheme.gold,
-                ),
+                leading: const Icon(Icons.equalizer_rounded, color: AppTheme.gold),
                 title: const Text('Sangeeta Equalizer'),
                 subtitle: const Text(
                   'Auto EQ by default • Manual presets and 5-band controls',
@@ -170,16 +150,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const Divider(height: 30),
               ListTile(
                 leading: const Icon(
                   Icons.face_retouching_natural_rounded,
                   color: AppTheme.gold,
                 ),
                 title: const Text('Avatar Character Preview'),
-                subtitle: const Text(
-                  'Check Sangeeta identity, outfits and animation states',
-                ),
+                subtitle: const Text('Check Sangeeta identity and animation states'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -187,22 +164,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const Divider(height: 30),
-              const Text(
-                'Access & token tools',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 6),
-              if (authProvider.isOwner)
+              if (authProvider.isOwner) ...[
+                const Divider(height: 30),
                 ListTile(
-                  leading: const Icon(
-                    Icons.dashboard_rounded,
-                    color: AppTheme.gold,
-                  ),
+                  leading: const Icon(Icons.dashboard_rounded, color: AppTheme.gold),
                   title: const Text('Admin Dashboard'),
-                  subtitle: const Text(
-                    'Users, active tokens, expiry days and free distribution QR',
-                  ),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -210,11 +176,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-              if (authProvider.isOwner)
                 ListTile(
                   leading: const Icon(Icons.key_rounded, color: AppTheme.gold),
                   title: const Text('License Manager'),
-                  subtitle: const Text('Generate 7-day, 30-day, 365-day or lifetime tokens'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -222,30 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-              ListTile(
-                leading: Icon(
-                  authProvider.isOwner
-                      ? Icons.admin_panel_settings_rounded
-                      : Icons.lock_open_rounded,
-                ),
-                title: Text(
-                  authProvider.isOwner
-                      ? 'Owner device'
-                      : 'Activation status',
-                ),
-                subtitle: Text(
-                  authProvider.isOwner
-                      ? 'This phone can generate access tokens.'
-                      : authProvider.statusText,
-                ),
-                trailing: authProvider.isOwner
-                    ? IconButton(
-                        tooltip: 'Leave owner mode',
-                        onPressed: authProvider.signOut,
-                        icon: const Icon(Icons.logout_rounded),
-                      )
-                    : null,
-              ),
+              ],
             ],
           );
         },

@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../models/avatar_outfit.dart';
+import '../models/wardrobe_profile.dart';
+import '../services/avatar_profile_service.dart';
+import 'avatar_accessory_overlay.dart';
 import 'sangeeta_avatar.dart';
 
-/// Local-only avatar stage. No remote avatar file, cloud runtime,
-/// or network animation source is used.
+/// Local-first Sangeeta avatar stage.
+///
+/// The production renderer keeps one canonical face/body identity and layers
+/// wardrobe/accessory state on top. A future rigged GLB/VRM renderer can sit
+/// behind this same widget without changing the player or voice surfaces.
 class RiveAvatarStage extends StatelessWidget {
   const RiveAvatarStage({
     required this.outfit,
@@ -19,10 +25,36 @@ class RiveAvatarStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SangeetaAvatar(
-      outfit: outfit,
-      pose: pose,
-      size: size,
+    return ListenableBuilder(
+      listenable: avatarProfileService,
+      builder: (context, _) => Semantics(
+        label:
+            'Sangeeta avatar, ${avatarProfileService.category.label}, ${pose.name}',
+        image: true,
+        child: SizedBox.square(
+          dimension: size,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              SangeetaAvatar(
+                outfit: outfit,
+                category: avatarProfileService.category,
+                hairstyle: avatarProfileService.hairstyle,
+                pose: pose,
+                size: size,
+              ),
+              AvatarAccessoryOverlay(
+                category: avatarProfileService.category,
+                hairstyle: avatarProfileService.hairstyle,
+                earrings: avatarProfileService.earrings,
+                shoes: avatarProfileService.shoes,
+                accessory: avatarProfileService.accessory,
+                size: size,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
