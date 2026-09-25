@@ -21,7 +21,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   void initState() {
     super.initState();
-    _section = widget.initialSection.clamp(0, 3);
+    _section = widget.initialSection.clamp(0, 3).toInt();
   }
 
   Future<void> _createPlaylist() async {

@@ -30,11 +30,14 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
   final List<Song> _queue = <Song>[];
   int _currentIndex = 0;
   double _volume = 1;
+  double? _preDuckVolume;
 
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   bool get isPlaying => _player.playing;
   double get volume => _volume;
+  int get currentIndex => _currentIndex;
+  List<Song> get queueSongs => List.unmodifiable(_queue);
 
   Future<void> playSong(Song song, {List<Song>? songs}) async {
     if (songs != null && songs.isNotEmpty) {
@@ -134,6 +137,23 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> adjustVolume(double delta) => setVolume(_volume + delta);
 
+  Future<void> duckForInterruption() async {
+    _preDuckVolume ??= _volume;
+    await _player.setVolume((_volume * .25).clamp(0.0, 1.0).toDouble());
+  }
+
+  Future<void> restoreAfterDuck() async {
+    final value = _preDuckVolume;
+    _preDuckVolume = null;
+    if (value != null) await _player.setVolume(value);
+  }
+
+  Future<void> playQueueIndex(int index) async {
+    if (_queue.isEmpty || index < 0 || index >= _queue.length) return;
+    _currentIndex = index;
+    await playSong(_queue[index], songs: _queue);
+  }
+
   @override
   Future<void> play() => _player.play();
 
@@ -163,6 +183,16 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     await playSong(_queue[_currentIndex], songs: _queue);
   }
 
+  @override
+  Future<void> fastForward() =>
+      seek(_player.position + const Duration(seconds: 10));
+
+  @override
+  Future<void> rewind() {
+    final target = _player.position - const Duration(seconds: 10);
+    return seek(target.isNegative ? Duration.zero : target);
+  }
+
   void _broadcastState(PlaybackEvent event) {
     final processingState = switch (_player.processingState) {
       ProcessingState.idle => AudioProcessingState.idle,
@@ -171,6 +201,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       ProcessingState.ready => AudioProcessingState.ready,
       ProcessingState.completed => AudioProcessingState.completed,
     };
+
     playbackState.add(
       PlaybackState(
         controls: <MediaControl>[
@@ -197,7 +228,7 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> onTaskRemoved() async {
-    // Keep playback alive when the app task is removed.
+    // Deliberately keep the audio service alive for background playback.
   }
 
   Future<void> dispose() async {

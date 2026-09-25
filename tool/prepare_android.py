@@ -7,7 +7,6 @@ ROOT = Path(".")
 manifest = ROOT / "android/app/src/main/AndroidManifest.xml"
 text = manifest.read_text(encoding="utf-8")
 
-# Local same-Wi-Fi admin registration uses a private LAN HTTP endpoint.
 if 'android:usesCleartextTraffic=' not in text:
     text = text.replace(
         '<application',
@@ -70,7 +69,6 @@ if "com.ryanheise.audioservice.AudioService" not in text:
 
 manifest.write_text(text, encoding="utf-8")
 
-# Generate launcher icons from the checked-in vector logo.
 svg = ROOT / "assets/brand/logo.svg"
 rendered = ROOT / "build_logo_1024.png"
 cairosvg.svg2png(url=str(svg), write_to=str(rendered), output_width=1024, output_height=1024)
@@ -90,8 +88,6 @@ with Image.open(rendered).convert("RGBA") as source:
         resized.save(out_dir / "ic_launcher.png")
         resized.save(out_dir / "ic_launcher_round.png")
 
-# Remove generated adaptive-icon XML so Android resolves the new PNG launcher
-# assets consistently across API levels.
 for adaptive in [
     ROOT / "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
     ROOT / "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
@@ -100,7 +96,7 @@ for adaptive in [
 
 stat_dir = ROOT / "android/app/src/main/res/drawable"
 stat_dir.mkdir(parents=True, exist_ok=True)
-(stat_dir / "ic_stat_sangeet.xml").write_text(
+(stat_dir / "ic_stat_sangeeta.xml").write_text(
     """<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -108,15 +104,14 @@ stat_dir.mkdir(parents=True, exist_ok=True)
     android:viewportHeight="24">
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M12,3a7,7 0,0 0,-7 7v4a2,2 0,0 0,2 2h1v-6a4,4 0,0 1,8 0v6h1a2,2 0,0 0,2 -2v-4a7,7 0,0 0,-7 -7zM7,17h-1v3a1,1 0,0 0,1 1h2v-2h-2zM15,19v2h2a1,1 0,0 0,1 -1v-3h-1v2z"/>
+        android:pathData="M12,2a5,5 0,0 0,-5 5v1.2C5.8,9.3 5,11 5,13c0,3.9 3.1,7 7,7s7,-3.1 7,-7c0,-2 -0.8,-3.7 -2,-4.8V7a5,5 0,0 0,-5 -5zM9.2,11.3a1,1 0,1 1,0,-2 1,1 0,0 1,0 2zM14.8,11.3a1,1 0,1 1,0,-2 1,1 0,0 1,0 2zM9.5,14.5c1.5,1.2 3.5,1.2 5,0 -0.4,1.8 -4.6,1.8 -5,0z"/>
 </vector>""",
     encoding="utf-8",
 )
-rendered.unlink(missing_ok=True)
-print("AndroidManifest.xml, launcher icon, and media notification icon prepared.")
 
-# permission_handler_android currently requires Android API 37 for compilation.
-# Keep targetSdk behavior unchanged; compileSdk only controls the API surface available at build time.
+rendered.unlink(missing_ok=True)
+print("Android media service, launcher icon, and Sangeeta notification icon prepared.")
+
 app_gradle = ROOT / "android/app/build.gradle.kts"
 if app_gradle.exists():
     gradle = app_gradle.read_text(encoding="utf-8")
