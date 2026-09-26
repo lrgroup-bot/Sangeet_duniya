@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
@@ -6,20 +8,20 @@ import 'screens/splash_screen.dart';
 import 'services/audio_handler.dart';
 import 'services/avatar_profile_service.dart';
 import 'services/auth_provider.dart';
-import 'services/library_store.dart';
-import 'services/equalizer_profile_service.dart';
-import 'services/local_lan_service.dart';
 import 'services/distribution_service.dart';
-import 'services/user_registry_service.dart';
+import 'services/equalizer_profile_service.dart';
+import 'services/library_store.dart';
+import 'services/local_lan_service.dart';
+import 'services/permission_service.dart';
 import 'theme/app_theme.dart';
 
 late final MusicAudioHandler audioHandler;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  AudioSession? session;
   try {
-    final session = await AudioSession.instance;
+    session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
   } catch (_) {}
 
@@ -29,8 +31,8 @@ Future<void> main() async {
       config: AudioServiceConfig(
         androidNotificationChannelId: 'com.lrs.sangeet_duniya.audio',
         androidNotificationChannelName: "LR's Sangeet_Duniya",
-        androidNotificationChannelDescription: 'Music playback controls',
-        androidNotificationIcon: 'drawable/ic_stat_sangeet',
+        androidNotificationChannelDescription: 'Sangeeta music playback controls',
+        androidNotificationIcon: 'drawable/ic_stat_sangeeta',
         androidNotificationOngoing: true,
         androidStopForegroundOnPause: false,
         androidResumeOnClick: true,
@@ -52,15 +54,39 @@ Future<void> main() async {
     audioHandler = MusicAudioHandler();
   }
 
+  if (session != null) {
+    session.interruptionEventStream.listen((event) {
+      if (event.begin) {
+        switch (event.type) {
+          case AudioInterruptionType.duck:
+            unawaited(audioHandler.duckForInterruption());
+            break;
+          case AudioInterruptionType.pause:
+          case AudioInterruptionType.unknown:
+            unawaited(audioHandler.pause());
+            break;
+        }
+      } else if (event.type == AudioInterruptionType.duck) {
+        unawaited(audioHandler.restoreAfterDuck());
+      }
+    });
+    session.becomingNoisyEventStream.listen((_) {
+      unawaited(audioHandler.pause());
+    });
+  }
+
   await libraryStore.load();
   await equalizerProfileService.load();
   await avatarProfileService.load();
-  await userRegistry.load();
   await distributionService.load();
   await localLanService.load();
   await authProvider.initialize();
 
   runApp(const SangeetDuniyaApp());
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(PermissionService.instance.requestNotifications());
+  });
 }
 
 class SangeetDuniyaApp extends StatelessWidget {

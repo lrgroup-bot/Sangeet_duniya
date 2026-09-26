@@ -7,6 +7,7 @@ import 'package:just_audio/just_audio.dart';
 import '../data/demo_songs.dart';
 import '../models/equalizer_profile.dart';
 import '../models/song.dart';
+import 'avatar_profile_service.dart';
 import 'equalizer_profile_service.dart';
 import 'library_store.dart';
 
@@ -28,18 +29,27 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
 
   final List<Song> _queue = <Song>[];
   int _currentIndex = 0;
+  double _volume = 1;
+  double? _preDuckVolume;
 
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
   bool get isPlaying => _player.playing;
+  double get volume => _volume;
+  int get currentIndex => _currentIndex;
+  List<Song> get queueSongs => List.unmodifiable(_queue);
 
   Future<void> playSong(Song song, {List<Song>? songs}) async {
     if (songs != null && songs.isNotEmpty) {
-      _queue..clear()..addAll(songs);
+      _queue
+        ..clear()
+        ..addAll(songs);
       final index = _queue.indexWhere((item) => item.id == song.id);
       _currentIndex = index < 0 ? 0 : index;
     } else if (_queue.isEmpty) {
-      _queue..clear()..addAll(demoSongs);
+      _queue
+        ..clear()
+        ..addAll(demoSongs);
       final index = _queue.indexWhere((item) => item.id == song.id);
       _currentIndex = index < 0 ? 0 : index;
     } else {
@@ -62,7 +72,9 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     if (duration != null) mediaItem.add(item.copyWith(duration: duration));
 
     await _applyRecommendedEq(song);
+    await avatarProfileService.applyMood(song.category);
     await libraryStore.recordPlayed(song);
+    await _player.setVolume(_volume);
     await _player.play();
   }
 
@@ -94,7 +106,8 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
         var nearestIndex = 0;
         var nearestDistance = double.infinity;
         for (var i = 0; i < EqualizerProfile.frequenciesHz.length; i++) {
-          final distance = (band.centerFrequency - EqualizerProfile.frequenciesHz[i]).abs();
+          final distance =
+              (band.centerFrequency - EqualizerProfile.frequenciesHz[i]).abs();
           if (distance < nearestDistance) {
             nearestDistance = distance;
             nearestIndex = i;
@@ -117,10 +130,44 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     } catch (_) {}
   }
 
-  @override Future<void> play() => _player.play();
-  @override Future<void> pause() => _player.pause();
-  @override Future<void> stop() async { await _player.stop(); await super.stop(); }
-  @override Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> setVolume(double value) async {
+    _volume = value.clamp(0.0, 1.0).toDouble();
+    await _player.setVolume(_volume);
+  }
+
+  Future<void> adjustVolume(double delta) => setVolume(_volume + delta);
+
+  Future<void> duckForInterruption() async {
+    _preDuckVolume ??= _volume;
+    await _player.setVolume((_volume * .25).clamp(0.0, 1.0).toDouble());
+  }
+
+  Future<void> restoreAfterDuck() async {
+    final value = _preDuckVolume;
+    _preDuckVolume = null;
+    if (value != null) await _player.setVolume(value);
+  }
+
+  Future<void> playQueueIndex(int index) async {
+    if (_queue.isEmpty || index < 0 || index >= _queue.length) return;
+    _currentIndex = index;
+    await playSong(_queue[index], songs: _queue);
+  }
+
+  @override
+  Future<void> play() => _player.play();
+
+  @override
+  Future<void> pause() => _player.pause();
+
+  @override
+  Future<void> stop() async {
+    await _player.stop();
+    await super.stop();
+  }
+
+  @override
+  Future<void> seek(Duration position) => _player.seek(position);
 
   @override
   Future<void> skipToNext() async {
@@ -136,6 +183,16 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
     await playSong(_queue[_currentIndex], songs: _queue);
   }
 
+  @override
+  Future<void> fastForward() =>
+      seek(_player.position + const Duration(seconds: 10));
+
+  @override
+  Future<void> rewind() {
+    final target = _player.position - const Duration(seconds: 10);
+    return seek(target.isNegative ? Duration.zero : target);
+  }
+
   void _broadcastState(PlaybackEvent event) {
     final processingState = switch (_player.processingState) {
       ProcessingState.idle => AudioProcessingState.idle,
@@ -144,23 +201,37 @@ class MusicAudioHandler extends BaseAudioHandler with SeekHandler {
       ProcessingState.ready => AudioProcessingState.ready,
       ProcessingState.completed => AudioProcessingState.completed,
     };
-    final controls = <MediaControl>[
-      MediaControl.skipToPrevious,
-      if (_player.playing) MediaControl.pause else MediaControl.play,
-      MediaControl.skipToNext,
-    ];
-    playbackState.add(PlaybackState(
-      controls: controls,
-      androidCompactActionIndices: const [0, 1, 2],
-      processingState: processingState,
-      playing: _player.playing,
-      updatePosition: _player.position,
-      bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
-      queueIndex: _currentIndex,
-    ));
+
+    playbackState.add(
+      PlaybackState(
+        controls: <MediaControl>[
+          MediaControl.skipToPrevious,
+          if (_player.playing) MediaControl.pause else MediaControl.play,
+          MediaControl.skipToNext,
+          MediaControl.stop,
+        ],
+        androidCompactActionIndices: const [0, 1, 2],
+        systemActions: const <MediaAction>{
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
+        processingState: processingState,
+        playing: _player.playing,
+        updatePosition: _player.position,
+        bufferedPosition: _player.bufferedPosition,
+        speed: _player.speed,
+        queueIndex: _currentIndex,
+      ),
+    );
   }
 
-  @override Future<void> onTaskRemoved() async {}
-  Future<void> dispose() async { await _player.dispose(); }
+  @override
+  Future<void> onTaskRemoved() async {
+    // Deliberately keep the audio service alive for background playback.
+  }
+
+  Future<void> dispose() async {
+    await _player.dispose();
+  }
 }
