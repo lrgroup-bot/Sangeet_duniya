@@ -120,4 +120,28 @@ if app_gradle.exists():
         "compileSdk = 37",
         1,
     )
+
+    key_properties = ROOT / "android/key.properties"
+    if key_properties.exists() and 'create("release")' not in gradle:
+        signing = """    val keystoreProperties = java.util.Properties()
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+        }
+    }
+
+"""
+        gradle = gradle.replace("    buildTypes {", signing + "    buildTypes {", 1)
+        gradle = gradle.replace(
+            'signingConfig = signingConfigs.getByName("debug")',
+            'signingConfig = signingConfigs.getByName("release")',
+            1,
+        )
+
     app_gradle.write_text(gradle, encoding="utf-8")

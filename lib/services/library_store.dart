@@ -96,6 +96,34 @@ class LibraryStore extends ChangeNotifier {
 
   List<String> get playlistNames => _playlists.keys.toList(growable: false);
 
+  List<String> get albumNames {
+    final names = _knownSongs.values
+        .map((song) => song.album.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return names;
+  }
+
+  List<String> get artistNames {
+    final names = _knownSongs.values
+        .map((song) => song.artist.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return names;
+  }
+
+  List<Song> songsInAlbum(String album) => _knownSongs.values
+      .where((song) => song.album == album)
+      .toList(growable: false);
+
+  List<Song> songsByArtist(String artist) => _knownSongs.values
+      .where((song) => song.artist == artist)
+      .toList(growable: false);
+
   List<Song> songsInPlaylist(String name) {
     final ids = _playlists[name] ?? const <String>{};
     return ids

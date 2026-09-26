@@ -29,10 +29,11 @@ extension LicensePlanInfo on LicensePlan {
         LicensePlan.lifetime => null,
       };
 
-  static LicensePlan fromWire(String value) {
-    for (final plan in LicensePlan.values) {
-      if (plan.name == value) return plan;
-    }
-    throw FormatException('Unknown license plan: $value');
+}
+
+LicensePlan licensePlanFromWire(String value) {
+  for (final plan in LicensePlan.values) {
+    if (plan.name == value) return plan;
   }
+  throw FormatException('Unknown license plan: $value');
 }

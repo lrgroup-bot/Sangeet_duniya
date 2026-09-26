@@ -19,6 +19,12 @@ data["NSMicrophoneUsageDescription"] = (
 data["NSSpeechRecognitionUsageDescription"] = (
     'Sangeeta uses speech recognition for "Hey Sangeeta" voice commands.'
 )
+data["NSLocalNetworkUsageDescription"] = (
+    "Sangeet_Duniya connects to your Windows PC admin server on Wi-Fi or Tailscale."
+)
+data["NSAppTransportSecurity"] = {
+    "NSAllowsLocalNetworking": True,
+}
 
 with plist_path.open("wb") as handle:
     plistlib.dump(data, handle)

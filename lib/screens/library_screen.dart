@@ -21,7 +21,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   void initState() {
     super.initState();
-    _section = widget.initialSection.clamp(0, 3).toInt();
+    _section = widget.initialSection.clamp(0, 5).toInt();
   }
 
   Future<void> _createPlaylist() async {
@@ -77,6 +77,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   _Chip(label: 'Downloads', selected: _section == 1, onTap: () => setState(() => _section = 1)),
                   _Chip(label: 'History', selected: _section == 2, onTap: () => setState(() => _section = 2)),
                   _Chip(label: 'Playlists', selected: _section == 3, onTap: () => setState(() => _section = 3)),
+                  _Chip(label: 'Albums', selected: _section == 4, onTap: () => setState(() => _section = 4)),
+                  _Chip(label: 'Artists', selected: _section == 5, onTap: () => setState(() => _section = 5)),
                 ],
               ),
             ),
@@ -85,7 +87,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
               0 => _songs(title: 'Favorite songs', songs: libraryStore.favorites),
               1 => _songs(title: 'Offline songs', songs: libraryStore.downloads),
               2 => _songs(title: 'Recently played', songs: libraryStore.historySongs),
-              _ => _playlists(),
+              3 => _playlists(),
+              4 => _collections(
+                  icon: Icons.album_rounded,
+                  emptyLabel: 'No albums known yet.',
+                  names: libraryStore.albumNames,
+                  songsFor: libraryStore.songsInAlbum,
+                ),
+              _ => _collections(
+                  icon: Icons.person_rounded,
+                  emptyLabel: 'No artists known yet.',
+                  names: libraryStore.artistNames,
+                  songsFor: libraryStore.songsByArtist,
+                ),
             },
           ],
         ),
@@ -131,6 +145,45 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _collections({
+    required IconData icon,
+    required String emptyLabel,
+    required List<String> names,
+    required List<Song> Function(String) songsFor,
+  }) {
+    if (names.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Text(emptyLabel, textAlign: TextAlign.center),
+        ),
+      );
+    }
+
+    return Column(
+      children: names.map((name) {
+        final songs = songsFor(name);
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: ListTile(
+            leading: CircleAvatar(child: Icon(icon)),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text(songs.length.toString() + ' songs'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SongCollectionScreen(
+                  title: name,
+                  songs: songs,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(growable: false),
     );
   }
 
@@ -216,6 +269,46 @@ class PlaylistDetailScreen extends StatelessWidget {
                 ),
               );
             },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class SongCollectionScreen extends StatelessWidget {
+  const SongCollectionScreen({
+    required this.title,
+    required this.songs,
+    super.key,
+  });
+
+  final String title;
+  final List<Song> songs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: songs.length,
+        itemBuilder: (context, index) {
+          final song = songs[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SongCard(
+              song: song,
+              onTap: () async {
+                await audioHandler.playSong(song, songs: songs);
+                if (!context.mounted) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PlayerScreen(),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

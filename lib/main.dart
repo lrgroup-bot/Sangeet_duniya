@@ -13,13 +13,9 @@ import 'services/equalizer_profile_service.dart';
 import 'services/library_store.dart';
 import 'services/local_lan_service.dart';
 import 'services/permission_service.dart';
-import 'services/user_registry_service.dart';
 import 'theme/app_theme.dart';
 
 late final MusicAudioHandler audioHandler;
-StreamSubscription<AudioInterruptionEvent>? _interruptionSubscription;
-StreamSubscription<void>? _noisySubscription;
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -59,20 +55,22 @@ Future<void> main() async {
   }
 
   if (session != null) {
-    _interruptionSubscription = session.interruptionEventStream.listen((event) {
+    session.interruptionEventStream.listen((event) {
       if (event.begin) {
         switch (event.type) {
           case AudioInterruptionType.duck:
             unawaited(audioHandler.duckForInterruption());
+            break;
           case AudioInterruptionType.pause:
           case AudioInterruptionType.unknown:
             unawaited(audioHandler.pause());
+            break;
         }
       } else if (event.type == AudioInterruptionType.duck) {
         unawaited(audioHandler.restoreAfterDuck());
       }
     });
-    _noisySubscription = session.becomingNoisyEventStream.listen((_) {
+    session.becomingNoisyEventStream.listen((_) {
       unawaited(audioHandler.pause());
     });
   }
@@ -80,7 +78,6 @@ Future<void> main() async {
   await libraryStore.load();
   await equalizerProfileService.load();
   await avatarProfileService.load();
-  await userRegistry.load();
   await distributionService.load();
   await localLanService.load();
   await authProvider.initialize();

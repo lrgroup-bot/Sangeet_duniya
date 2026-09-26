@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/sangeeta_personality.dart';
+import '../models/wardrobe_profile.dart';
 import '../services/auth_provider.dart';
 import '../services/avatar_profile_service.dart';
 import '../services/sangeeta_service.dart';

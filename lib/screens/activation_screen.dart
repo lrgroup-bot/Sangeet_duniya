@@ -178,7 +178,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                             controller: codeController,
                             keyboardType: TextInputType.number,
                             maxLength: 6,
-                            inputFormatters: const [
+                            inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
                               LengthLimitingTextInputFormatter(6),
                             ],

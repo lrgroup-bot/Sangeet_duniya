@@ -59,3 +59,32 @@
 - Added local Clean Audio processing to produce a denoised FLAC copy with EQ and loudness normalization.
 - Download controls now respect the source's downloadable flag.
 - Kept the application free of ads, subscriptions, payments, Supabase and Vercel runtime services.
+
+
+## 2.2.0+22 — 25 September 2026
+
+### Sangeeta Wardrobe
+- Added ten wardrobe categories plus favorites and mood-based switching.
+- Added persistent hairstyle, earrings, shoes and accessory selection.
+- Added the v2.2 sports-set base presentation.
+
+### Sangeeta Voice
+- Added strict "Hey Sangeeta" gating for foreground wake mode.
+- Added Odia/Hindi/English responses, speech-completion lip state and commands for playback, volume, playlists, downloads and search.
+
+### Music
+- Hardened background playback, media-session interruption handling and notification/lock-screen controls.
+- Added live queue, sleep timer, LRC timed lyrics, albums and artists.
+- Kept downloads source-permission aware.
+
+### PC Admin
+- Replaced phone-hosted admin/token generation with a Windows PC server.
+- Added local SQLite, six-digit activation codes, 7/14/30/90/180/365/Lifetime validity, multi-phone limits, countdowns, device sync and revocation.
+- Added same-Wi-Fi and Tailscale client connectivity.
+- Removed embedded mobile owner PIN/signing secret.
+
+### Release
+- Bumped app to v2.2.0+22.
+- Added Android signed-release workflow with signature verification, SHA-256 artifact and automatic GitHub Release publishing.
+- Added iOS no-codesign CI verification.
+- Added Python admin-server CI tests.

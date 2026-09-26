@@ -5,7 +5,7 @@ class DistributionService extends ChangeNotifier {
   static const _urlKey = 'distribution_url';
 
   String downloadUrl =
-      'https://github.com/lrgroup-bot/Sangeet_duniya/releases/latest';
+      'https://github.com/lrgroup-bot/Sangeet_duniya/releases/latest/download/LRs-Sangeet-Duniya-v2.2.0.apk';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();

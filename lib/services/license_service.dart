@@ -79,7 +79,7 @@ class LicenseService {
   String encodeCache(LicenseInfo info) => jsonEncode(info.toJson());
 
   LicenseInfo _parseActivation(Map<String, dynamic> json) {
-    final plan = LicensePlanInfo.fromWire(json['plan']?.toString() ?? '');
+    final plan = licensePlanFromWire(json['plan']?.toString() ?? '');
     final issuedAt = DateTime.parse(json['issued_at'].toString()).toUtc();
     final activatedAt =
         DateTime.parse(json['activated_at'].toString()).toUtc();

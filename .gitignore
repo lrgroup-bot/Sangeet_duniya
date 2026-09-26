@@ -1,0 +1,38 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Generated platform files in this repository's CI workflow
+android/.gradle/
+android/local.properties
+
+# Release signing - never commit private keys
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+*.jks
+*.keystore
+
+# Windows PC admin runtime data
+admin_server/data/
+admin_server/*.db
+admin_server/**/*.db
+__pycache__/
+*.pyc
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+.lrs-admin-data/
+.runtime/
+python.json
+server.stdout.log
+server.stderr.log
+watchdog.log

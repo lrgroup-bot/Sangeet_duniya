@@ -1,228 +1,144 @@
-# LR's Sangeet_Duniya 🎵
+# LR's Sangeet_Duniya v2.2
 
-A free, Android-first Flutter music application with a premium black-and-gold interface, background playback, local library support, and the future Sangeeta voice companion.
+A local-first Flutter music app for Android and iOS with the Sangeeta voice/avatar companion and a Windows PC activation/admin server.
 
-Development rule: A phase is marked COMPLETED only after code is implemented and the automated/device tests for that phase pass.
+## v2.2 architecture
 
-## Current status
+```text
+Android / iOS app
+  ├─ local library, favorites, playlists, downloads, history
+  ├─ just_audio + audio_service background playback
+  ├─ Sangeeta voice commands + TTS + animated avatar
+  ├─ local wardrobe profile
+  └─ activation client
+          │
+          ├─ same Wi-Fi
+          └─ Tailscale
+                │
+Windows PC Admin Server :40425
+  ├─ six-digit activation codes
+  ├─ local SQLite database
+  ├─ device registry / multi-phone activation
+  ├─ validity countdown / revocation
+  └─ local web dashboard
+```
 
-| Phase | Scope | Status | Testing |
-|---|---|---|---|
-| 1 | Foundation: UI + player + background audio | 🟡 BUILD VERIFIED | ✅ CI PASS; 📱 device test pending |
-| 2 | Sangeeta voice/chat assistant | 🟡 IMPLEMENTED | ✅ CI/device voice verification pending |
-| 3 | Sangeeta dancing avatar + wardrobe | 🟡 IMPLEMENTED | ✅ CI/device animation verification pending |
-| 4 | Music engine: downloads, lyrics, playlists, smart library | 🟡 IMPLEMENTED | ✅ CI/device offline verification pending |
-| 5 | APK build, optimization, release | 🎨 DESIGN ONLY | ⬜ Not started |
+There is no Supabase, Vercel, cloud database, payment gateway or ad SDK in the application runtime.
 
-## Phase 1 — Foundation
+## Sangeeta avatar
 
-Target features:
+- Wake phrase: **Hey Sangeeta**.
+- Odia, Hindi and English voice selection.
+- Listening, speaking, greeting and music-reactive dance states.
+- Speaking state stays active through TTS completion so the mouth animation tracks the spoken response.
+- Mini Sangeeta appears in the player; Android media notification uses the Sangeeta monochrome notification icon.
+- Wardrobe categories: Casual, Party, Romantic, Traditional Odia, DJ Stage Outfit, Gym Wear, Beach / Resort Wear, Night Wear, Festival Collection and Winter Collection.
+- Persisted hairstyle, earrings, shoes, accessories, favorite outfits and automatic mood-based outfit changes.
 
-- Premium black-and-gold AMOLED UI.
-- Vector Sangeeta logo with gradient, glow and layered 3D-style lettering.
-- Splash screen and app branding.
-- Home, Search, Library, and Player screens.
-- Demo streaming playback as the test transport.
-- Background playback through audio_service + just_audio.
-- Android media notification and lock-screen controls.
-- Mini-player UI.
-- Clean project structure ready for later Sangeeta integration.
+Wake listening is implemented while the Sangeeta voice surface is active. Android/iOS background hotword detection is intentionally not implemented as a permanent microphone service.
 
-### Phase 1 acceptance tests
+## Music player
 
-- [x] flutter analyze passes.
-- [x] flutter test passes.
-- [x] Android debug APK builds successfully.
-- [ ] App launches without a crash.
-- [ ] Demo track can play and pause.
-- [ ] Playback continues when the app is minimized.
-- [ ] Android notification controls work.
-- [ ] Lock-screen media controls work.
+- Background playback and media notification / lock-screen controls.
+- Search and trending source adapter plus local/offline library.
+- Favorites, recently played, playlists, albums, artists and live queue.
+- LRC-style synchronized lyrics when timed lyrics are available; plain lyrics remain readable.
+- Equalizer and Android loudness controls.
+- Offline downloads only when the source marks a track downloadable.
+- Sleep timer.
+- Mini player.
+- Local Clean Audio workflow for downloaded files.
 
-Automated Phase 1 checks passed on GitHub Actions. Phase 1 remains open until the APK is installed and background playback, notification controls, and lock-screen controls are verified on a real Android device.
+The app does not bypass third-party advertising, DRM, paywalls or source access controls.
 
-## Phase 2 — Sangeeta
+## Voice commands
 
-Sangeeta is the single assistant identity for the app.
+Typed commands work directly. Voice commands in wake mode require **Hey Sangeeta** first.
 
-Planned capabilities:
+Supported actions include Play Song, Pause Music, Resume Music, Next Song, Previous Song, Volume Up, Volume Down, Open Playlist, Download Song and Search Song.
 
-- Wake phrases including Hey Sangeeta, Hi Sangeeta, Hello Sangeeta, Hey Sweetheart, Hi Baby, and Hello Darling.
-- Default Sweetheart personality.
-- Friendly, affectionate, playful conversation in Odia, with Hindi and English options.
-- Text chat and voice commands.
-- Playback control: play, pause, next, previous, search, and playlist commands.
-- No separate AI DJ.
+## Windows PC activation server
 
-## Phase 3 — Sangeeta Avatar
+Start:
 
-Planned avatar system:
+```powershell
+admin_server\start_admin_server.bat
+```
 
-- Sangeeta appears as the app's original virtual character.
-- Floating mini-dancer while music plays.
-- Full-screen Dance Mode.
-- Music-reactive animations.
-- Multiple dance styles by song category.
-- Lip-sync for assistant responses.
-- Wardrobe presets for romantic, party, Odia/traditional, Bollywood, devotional, festival, and other user-selected styles.
-- Optional user-controlled avatar style settings.
-- Supplied reference images are treated as visual references; the final character is kept as an original app character.
+or:
 
-## Phase 4 — Music Engine
+```powershell
+py -3 admin_server\server.py --host 0.0.0.0 --port 40425
+```
 
-Planned features:
+Open `http://127.0.0.1:40425/` on the PC and log in with the admin token printed by the server. The server generates six-digit activation codes for:
 
-- Local/offline library.
-- Download and cache management where source terms permit.
-- Favorites.
-- User playlists.
-- Recently played.
-- Lyrics integration.
-- Multiple source/plugin adapters designed with clear licensing boundaries.
-- Smart recommendations that can run locally where possible.
+- 7 days
+- 14 days
+- 30 days
+- 90 days
+- 180 days
+- 365 days
+- Lifetime
 
-## Phase 5 — APK + Release
+A validity window starts on first activation. Each code can allow multiple phones up to the device limit selected in the PC dashboard. The phone caches a valid lease for local-first use and synchronizes revocation/expiry when the PC is reachable.
 
-Release checklist:
+Use the PC LAN IPv4 on the same Wi-Fi or its Tailscale IPv4 from remote networks. See `admin_server/README.md`.
 
-- [ ] Release build.
-- [ ] Android install test.
-- [ ] Background playback regression test.
-- [ ] Notification/lock-screen regression test.
-- [ ] Performance check.
-- [ ] Permissions and privacy review.
-- [ ] README and CHANGELOG updated.
-- [ ] APK artifact attached to the release/build.
+## Android build and release
 
-## Architecture
+Version: **2.2.0+22**.
 
-~~~text
-lib/
-├── data/
-├── models/
-├── screens/
-├── services/
-├── theme/
-├── widgets/
-└── main.dart
+GitHub Actions verifies Flutter analysis/tests, the Windows admin server tests, an Android debug APK and an iOS no-codesign build. When Android signing secrets are configured, a main-branch build also:
 
-test/
-tool/
-.github/workflows/
-~~~
+1. builds the release APK,
+2. verifies its APK signature,
+3. uploads the signed artifact and SHA-256 file,
+4. creates/updates the matching GitHub Release automatically.
 
-The initial code uses open-source Flutter packages rather than copying source code from another application. The project can take architectural inspiration from open-source music clients while keeping this repository's implementation independently authored.
+Required repository secrets:
 
-## Local setup
+```text
+ANDROID_KEYSTORE_BASE64
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
+ANDROID_STORE_PASSWORD
+```
 
-Install Flutter stable, then:
+The signing key is deliberately not committed to the repository. This preserves Android update compatibility and keeps the private release key private.
 
-~~~bash
+The release asset name is:
+
+```text
+LRs-Sangeet-Duniya-v2.2.0.apk
+```
+
+After the v2.2 release exists, the direct latest-release URL used by the app points to that APK asset.
+
+## Local development
+
+```bash
 flutter pub get
-flutter run
-~~~
+flutter analyze
+flutter test
+```
 
-For Android:
+Android:
 
-~~~bash
+```bash
+flutter create --platforms=android --org com.lrs.sangeet .
+python3 tool/prepare_android.py
 flutter build apk --debug
-~~~
+```
 
-The CI workflow can generate the Android platform files when needed and then build the APK.
+iOS on macOS:
 
-## Documentation
-
-- Phase 1: docs/PHASE-1.md
-- Phase 2 — Sangeeta: docs/PHASE-2-SANGEETA.md
-- Phase 3 — Avatar: docs/PHASE-3-AVATAR.md
-- Phase 4 — Music Engine: docs/PHASE-4-MUSIC-ENGINE.md
-- Phase 5 — APK: docs/PHASE-5-APK.md
-- Architecture: docs/ARCHITECTURE.md
-- Changelog: CHANGELOG.md
+```bash
+flutter create --platforms=ios --org com.lrs.sangeet .
+python3 tool/prepare_ios.py
+flutter build ios --release --no-codesign
+```
 
 ## License
 
-MIT — see LICENSE.
-
-
-## Latest verification
-
-GitHub Actions run 6 passed flutter analyze, flutter test, Android debug APK build, and APK artifact upload. The generated debug APK is available from the build artifact. Real-device runtime checks are still required before Phase 1 is marked COMPLETED.
-
-## v0.1.1 rebuild
-
-- Replaced the temporary splash icon with a vector-drawn Sangeeta logo.
-- Added startup fallback so media-service initialization does not leave the app at a white screen.
-- Android launcher icons are generated from the checked-in vector logo during CI.
-- GitHub Actions run 17: analyze PASS, unit tests PASS, debug APK build PASS, artifact upload PASS.
-- Real Android device behavior still requires physical-device verification.
-
-## No-cloud design
-
-Phases 1–4 are designed to run without a cloud database or cloud storage. Background audio uses Android media services, Sangeeta uses the device speech-recognition/TTS services, and the library/download state is stored locally in the app. Network access is used only for remote music/test URLs and future provider integrations where their terms permit.
-
-## Phase 5 current implementation
-
-Phase 5 is now actively implemented for the interactive Sangeeta avatar and private activation layer.
-
-### Interactive Sangeeta player
-
-- Full-body original Sangeeta avatar.
-- Play: Sangeeta dances above the central control.
-- Pause: Sangeeta uses a seated pose on the central control.
-- Next: Sangeeta moves to the Next button.
-- Previous: Sangeeta moves to the Previous button.
-- Mini-player: a small Sangeeta follows play/pause state.
-- Wardrobe presets: Casual, Party, Romantic, Traditional Odia, Gym/Chill, Resort swimwear, Elegant satin nightwear.
-- Local Flutter avatar renderer; no external avatar service or remote animation file.
-
-### Private activation
-
-- Owner mode on the administrator phone.
-- Owner can generate 7-day, 30-day, 365-day, or Ultimate Lifetime tokens.
-- Tokens can be bound to a recipient phone number.
-- Other phones enter the phone number and token to unlock the app until the token expires.
-
-The current activation gate is for private distribution. Names, phone numbers, token records, and validity are stored only on the administrator phone. The app contains no payment gateway, checkout, subscription purchase, or in-app billing flow.
-
-
-## Mobile-only architecture
-
-- No Supabase.
-- No Vercel.
-- No cloud database.
-- No cloud avatar runtime.
-- No cloud analytics or user tracking.
-- User registry, activation state, avatar settings, favorites, playlists and downloads stay on the device.
-- GitHub is used only as the source-code repository and build automation; it is not an app runtime dependency.
-- Internet access is used only when a music/artwork source itself is remote; local/downloaded files remain available offline.
-
-## Free-only distribution
-
-- No payment gateway is included.
-- No subscription checkout is included.
-- No money collection is performed by the app.
-- 7-day, 30-day, 365-day and Ultimate are access-validity choices, not paid plans.
-- QR generation uses the free open-source `qr_flutter` package and works offline. citeturn961158search0turn961158search1
-- Flutter supports Android and iOS from the same codebase; iOS native build requires macOS/Xcode. citeturn135278search0turn135278search4
-
-
-## Internet Music + Audio Quality
-
-The app now has a direct Internet music catalog adapter using the Audius read-only API, plus the existing local library and background player. Audius provides REST endpoints for searching, trending, and streaming tracks; this app calls those endpoints directly from the phone and does not use Supabase or Vercel. citeturn542411search3
-
-### Sound controls
-
-- Sangeeta Auto EQ is enabled by default and chooses a local preset from song metadata.
-- Manual EQ provides Balanced, Bass Boost, Vocal Clarity, Dance, Rock, Acoustic and Classical presets plus five adjustable bands.
-- Android live EQ uses just_audio's Android audio-effect pipeline.
-- Clean Audio works on a song already downloaded to the phone and creates a local FLAC with denoise, EQ and loudness normalization. It does not magically restore information that was never present in the source.
-- Download is only offered when the source marks the track as downloadable.
-
-The Android EQ pipeline uses just_audio's `AndroidEqualizer` / `AndroidLoudnessEnhancer` effects. citeturn542411search10turn542411search12 FFmpeg audio processing is provided by the maintained `ffmpeg_kit_flutter_new_audio` package, which supports Android and iOS among its supported platforms. citeturn542411search1
-
-### Ad-free experience
-
-LR's Sangeet_Duniya contains no advertising SDK or paid subscription flow in the app. It can provide an ad-free player interface for the sources we integrate directly. It does not bypass, remove, or defeat advertisements, paywalls, DRM, or access controls of third-party services.
-
-The available catalog therefore depends on the source's rights and API. The app is designed to add additional direct, permitted music sources without adding a cloud backend.
+MIT — see `LICENSE`.

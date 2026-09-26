@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/license_plan.dart';
 import 'license_service.dart';
 import 'local_lan_service.dart';
 
